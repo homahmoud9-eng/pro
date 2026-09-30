@@ -66,6 +66,7 @@ async function runBilingualVerification() {
   const routesToTest = [
     '/dashboard',
     '/business',
+    '/business/branches/0e1304c8-3086-438e-aca1-7a5f94685947',
     '/employees',
     '/documents',
     '/procedures',

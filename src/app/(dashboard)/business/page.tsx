@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useI18n } from "@/i18n/context";
 import { AuthorizationPasswordDialog } from "@/components/security/authorization-password-dialog";
 import { PdfViewerModal } from "@/components/pdf/pdf-viewer-modal";
@@ -18,6 +19,9 @@ import {
   CheckCircle,
   X,
   Loader2,
+  ChevronRight,
+  FolderLock,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function BusinessPage() {
@@ -156,16 +160,23 @@ export default function BusinessPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {branches.map((b: any) => (
-            <div
+            <Link
               key={b.id}
-              className="p-5 bg-[#141720] border border-[#1e2433] rounded-3xl space-y-4 hover:border-slate-700 transition"
+              href={`/business/branches/${b.id}`}
+              className="group p-5 bg-[#141720] border border-[#1e2433] rounded-3xl space-y-4 hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-950/20 transition-all duration-200 block"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-950/40 border border-rose-800/40 text-rose-400 font-bold">
-                    {b.code}
-                  </span>
-                  <h3 className="text-sm font-bold text-white mt-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-950/40 border border-rose-800/40 text-rose-400 font-bold">
+                      {b.code}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-blue-950/40 border border-blue-800/40 text-blue-400 font-medium flex items-center gap-1">
+                      <FolderLock className="w-2.5 h-2.5" />
+                      {t.branchDocs.branchDocuments}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white mt-1.5 group-hover:text-emerald-400 transition-colors">
                     {locale === "ar" ? b.nameAr || b.nameEn : b.nameEn}
                   </h3>
                   <p className="text-xs text-slate-400">
@@ -194,7 +205,7 @@ export default function BusinessPage() {
                   <div className="text-[10px] text-slate-500">{t.business.staffCount}</div>
                 </div>
                 <div className="bg-[#0c0e12] p-2 rounded-xl">
-                  <div className="font-bold text-white">{b._count.documents}</div>
+                  <div className="font-bold text-emerald-400">{b.docStats?.total || b._count.documents}</div>
                   <div className="text-[10px] text-slate-500">{t.business.docsCount}</div>
                 </div>
                 <div className="bg-[#0c0e12] p-2 rounded-xl">
@@ -202,7 +213,34 @@ export default function BusinessPage() {
                   <div className="text-[10px] text-slate-500">{t.business.itemsCount}</div>
                 </div>
               </div>
-            </div>
+
+              {/* Status Alert Pills if Expiring or Expired */}
+              {(b.docStats?.expiring > 0 || b.docStats?.expired > 0) && (
+                <div className="flex items-center gap-2 pt-1">
+                  {b.docStats?.expired > 0 && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-950/50 text-rose-400 border border-rose-800/40 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      {b.docStats.expired} {t.branchDocs.expiredDocs}
+                    </span>
+                  )}
+                  {b.docStats?.expiring > 0 && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-950/50 text-amber-400 border border-amber-800/40 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      {b.docStats.expiring} {t.branchDocs.expiringDocs}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Direct Clickable Action Footer */}
+              <div className="pt-2 border-t border-[#1e2433] flex items-center justify-between text-xs font-semibold text-emerald-400 group-hover:text-emerald-300">
+                <span className="flex items-center gap-1.5">
+                  <FolderLock className="w-3.5 h-3.5" />
+                  {t.branchDocs.branchDocuments}
+                </span>
+                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 rtl:group-hover:-translate-x-1 rtl:rotate-180 transition-transform" />
+              </div>
+            </Link>
           ))}
         </div>
       </div>

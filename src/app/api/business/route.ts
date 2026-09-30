@@ -9,33 +9,55 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [organization, branches, departments, legalDocs] = await Promise.all([
-    prisma.organization.findUnique({
-      where: { id: actor.organizationId },
-    }),
-    prisma.branch.findMany({
-      where: { organizationId: actor.organizationId },
-      include: {
-        _count: { select: { employees: true, documents: true, inventoryItems: true } },
-      },
-    }),
-    prisma.department.findMany({
-      where: { organizationId: actor.organizationId },
-      include: { _count: { select: { employees: true } } },
-    }),
-    prisma.document.findMany({
-      where: { organizationId: actor.organizationId, isLegal: true },
-      include: { documentType: true, currentVersion: true },
-    }),
-  ]);
+    const [organization, branchesRaw, departments, legalDocs, docStats] = await Promise.all([
+      prisma.organization.findUnique({
+        where: { id: actor.organizationId },
+      }),
+      prisma.branch.findMany({
+        where: { organizationId: actor.organizationId },
+        include: {
+          _count: { select: { employees: true, documents: true, inventoryItems: true } },
+        },
+        orderBy: { code: "asc" },
+      }),
+      prisma.department.findMany({
+        where: { organizationId: actor.organizationId },
+        include: { _count: { select: { employees: true } } },
+      }),
+      prisma.document.findMany({
+        where: { organizationId: actor.organizationId, isLegal: true },
+        include: { documentType: true, currentVersion: true, branch: true },
+      }),
+      prisma.document.groupBy({
+        by: ["branchId", "status"],
+        where: { organizationId: actor.organizationId, branchId: { not: null } },
+        _count: { _all: true },
+      }),
+    ]);
 
-  return NextResponse.json({
-    organization,
-    branches,
-    departments,
-    legalDocs,
-  });
-}
+    const branches = branchesRaw.map((b) => {
+      const stats = docStats.filter((s) => s.branchId === b.id);
+      const activeDocuments = stats.find((s) => s.status === "ACTIVE")?._count._all || 0;
+      const expiringDocuments = stats.find((s) => s.status === "EXPIRING_SOON")?._count._all || 0;
+      const expiredDocuments = stats.find((s) => s.status === "EXPIRED")?._count._all || 0;
+      return {
+        ...b,
+        docStats: {
+          total: b._count.documents,
+          active: activeDocuments,
+          expiring: expiringDocuments,
+          expired: expiredDocuments,
+        },
+      };
+    });
+
+    return NextResponse.json({
+      organization,
+      branches,
+      departments,
+      legalDocs,
+    });
+  }
 
 export async function PATCH(req: NextRequest) {
   try {
