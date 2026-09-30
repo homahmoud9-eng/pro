@@ -2,7 +2,13 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/context";
+import {
+  DashboardDataResponse,
+  DashboardMetrics,
+  DEFAULT_DASHBOARD_METRICS,
+} from "@/types/dashboard";
 import {
   Users,
   FileWarning,
@@ -13,48 +19,96 @@ import {
   Receipt,
   Wallet,
   UtensilsCrossed,
-  Package,
   ShieldAlert,
   History,
   ArrowUpRight,
   Plus,
   ShieldCheck,
-  Building2,
-  Calendar,
+  RotateCcw,
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { t, locale } = useI18n();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [data, setData] = useState<DashboardDataResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardMetrics = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard/metrics");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || `Server responded with status ${res.status}`);
+      }
+      if (!json || typeof json.metrics !== "object") {
+        throw new Error("Invalid payload: metrics contract missing from server response");
+      }
+      setData(json);
+    } catch (err: any) {
+      console.error("Dashboard metrics loading error:", err);
+      setError(err?.message || "Failed to load dashboard metrics");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/dashboard/metrics")
-      .then((r) => r.json())
-      .then((res) => {
-        setData(res);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Dashboard metrics error:", err);
-        setLoading(false);
-      });
+    fetchDashboardMetrics();
   }, []);
 
-  if (loading || !data) {
+  // 1. Explicit Loading State
+  if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-10 bg-slate-800/50 rounded-2xl w-1/3" />
+      <div className="space-y-8 animate-pulse">
+        <div className="h-24 bg-[#141720] border border-[#1e2433] rounded-3xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-28 bg-[#141720] rounded-2xl border border-slate-800/80" />
+            <div key={i} className="h-32 bg-[#141720] rounded-2xl border border-[#1e2433]" />
           ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5 h-64 bg-[#141720] rounded-3xl border border-[#1e2433]" />
+          <div className="lg:col-span-7 h-64 bg-[#141720] rounded-3xl border border-[#1e2433]" />
         </div>
       </div>
     );
   }
 
-  const { metrics, recentAudits } = data;
+  // 2. Explicit Error State with Retry Button
+  if (error || !data) {
+    return (
+      <div className="p-8 bg-[#141720] border border-rose-900/40 rounded-3xl text-center space-y-4 max-w-lg mx-auto my-12">
+        <div className="w-12 h-12 rounded-2xl bg-rose-950/60 border border-rose-800/40 text-rose-500 flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-white mb-1">
+            {locale === "ar" ? "تعذر تحميل مؤشرات التشغيل" : "Failed to Load Dashboard Metrics"}
+          </h2>
+          <p className="text-xs text-rose-400 font-mono break-words">{error}</p>
+        </div>
+        <button
+          onClick={fetchDashboardMetrics}
+          className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold inline-flex items-center space-x-2 rtl:space-x-reverse transition shadow-lg shadow-rose-950/40"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>{locale === "ar" ? "إعادة المحاولة" : "Retry Now"}</span>
+        </button>
+      </div>
+    );
+  }
+
+  // 3. Guaranteed Safe Metrics Object (Never undefined)
+  const metrics: DashboardMetrics = data.metrics || DEFAULT_DASHBOARD_METRICS;
+  const recentAudits = Array.isArray(data.recentAudits) ? data.recentAudits : [];
 
   const kpis = [
     {
@@ -96,7 +150,7 @@ export default function DashboardPage() {
     },
     {
       title: t.dashboard.todaySales,
-      value: `${metrics.todaySales.toLocaleString()} ${t.common.currency}`,
+      value: `${Number(metrics.todaySales || 0).toLocaleString()} ${metrics.currency || t.common.currency}`,
       unit: "",
       sub: locale === "ar" ? "ربط نقاط البيع معتمد" : "POS integration ready",
       icon: TrendingUp,
@@ -105,7 +159,7 @@ export default function DashboardPage() {
     },
     {
       title: t.dashboard.monthExpenses,
-      value: `${metrics.monthExpenses.toLocaleString()} ${t.common.currency}`,
+      value: `${Number(metrics.monthExpenses || 0).toLocaleString()} ${metrics.currency || t.common.currency}`,
       unit: "",
       sub: locale === "ar" ? "المشتريات، الإيجارات، والرسوم" : "Supplies, leases, government fees",
       icon: Receipt,
@@ -114,7 +168,7 @@ export default function DashboardPage() {
     },
     {
       title: t.dashboard.netWallet,
-      value: `${metrics.netWallet.toLocaleString()} ${t.common.currency}`,
+      value: `${Number(metrics.netWallet || 0).toLocaleString()} ${metrics.currency || t.common.currency}`,
       unit: "",
       sub: locale === "ar" ? "صافي السيولة النقدية للتشغيل" : "Estimated net operating cash",
       icon: Wallet,
@@ -123,7 +177,7 @@ export default function DashboardPage() {
     },
     {
       title: t.dashboard.foodCostPercent,
-      value: `${metrics.foodCostPercent}%`,
+      value: `${Number(metrics.foodCostPercent || 0)}%`,
       unit: "",
       sub: locale === "ar" ? "المعدل المستهدف < 30%" : "Target benchmark < 30%",
       icon: UtensilsCrossed,
@@ -288,11 +342,13 @@ export default function DashboardPage() {
           <div className="mt-6 pt-4 border-t border-[#1e2433] flex items-center justify-between text-xs text-slate-400">
             <span>
               {locale === "ar" ? "الملاحظات المفتوحة:" : "Open Findings:"}{" "}
-              <strong className="text-rose-400">{metrics.openFindings}</strong>
+              <strong className="text-rose-400 font-mono">{metrics.openFindings}</strong>
             </span>
             <span>
               {locale === "ar" ? "قيمة المخزون:" : "Inventory Value:"}{" "}
-              <strong className="text-white font-mono">{metrics.inventoryValue.toLocaleString()} {t.common.currency}</strong>
+              <strong className="text-white font-mono">
+                {Number(metrics.inventoryValue || 0).toLocaleString()} {metrics.currency || t.common.currency}
+              </strong>
             </span>
           </div>
         </div>
@@ -323,32 +379,38 @@ export default function DashboardPage() {
           </div>
 
           <div className="divide-y divide-[#1e2433] overflow-hidden">
-            {recentAudits.map((audit: any) => (
-              <div key={audit.id} className="py-3.5 flex items-start justify-between gap-3 text-xs">
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <span className="font-semibold text-white truncate">
-                      {audit.actorNameSnapshot}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 uppercase">
-                      {audit.action}
-                    </span>
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      #{audit.sequenceNumber}
-                    </span>
-                  </div>
-                  <p className="text-slate-400 truncate">
-                    {audit.entityDisplayName || audit.reason || audit.entityType}
-                  </p>
-                </div>
-                <div className="text-end flex-shrink-0 text-[11px] text-slate-500">
-                  {new Date(audit.occurredAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
+            {recentAudits.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-500">
+                {locale === "ar" ? "لا توجد عمليات تدقيق حديثة مسجلة" : "No recent audit activity"}
               </div>
-            ))}
+            ) : (
+              recentAudits.map((audit) => (
+                <div key={audit.id} className="py-3.5 flex items-start justify-between gap-3 text-xs">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <span className="font-semibold text-white truncate">
+                        {audit.actorNameSnapshot}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 uppercase">
+                        {audit.action}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        #{audit.sequenceNumber}
+                      </span>
+                    </div>
+                    <p className="text-slate-400 truncate">
+                      {audit.entityDisplayName || audit.reason || audit.entityType}
+                    </p>
+                  </div>
+                  <div className="text-end flex-shrink-0 text-[11px] text-slate-500 font-mono">
+                    {new Date(audit.occurredAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
