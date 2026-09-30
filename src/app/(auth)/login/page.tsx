@@ -26,48 +26,48 @@ export default function LoginPage() {
 
   const demoAccounts = [
     {
-      role: "Owner (Global Access)",
+      role: t.auth.roleOwner,
       user: "owner",
       pass: "OwnerLogin@2026!",
       auth: "OwnerAuth@2026!",
-      desc: "Full business, finance, HR, compliance & audit permissions",
-      badge: "Full Access",
+      desc: t.auth.descOwner,
+      badge: t.auth.badgeFullAccess,
       color: "border-rose-500/40 text-rose-400 bg-rose-950/20",
     },
     {
-      role: "HR Manager",
+      role: t.auth.roleHrManager,
       user: "hrmanager",
       pass: "HrManager@2026!",
       auth: "HrAuth@2026!",
-      desc: "Staff records, compliance documents, attendance & payroll prep",
-      badge: "HR Scope",
+      desc: t.auth.descHrManager,
+      badge: t.auth.badgeHrScope,
       color: "border-purple-500/40 text-purple-400 bg-purple-950/20",
     },
     {
-      role: "Branch Manager (Al Bateen)",
+      role: t.auth.roleBranchManager,
       user: "bmbateen",
       pass: "BranchMgr@2026!",
       auth: "BranchAuth@2026!",
-      desc: "Branch-scoped access to BR-01 only (IDOR protected)",
-      badge: "Branch Scoped",
+      desc: t.auth.descBranchManager,
+      badge: t.auth.badgeBranchScoped,
       color: "border-blue-500/40 text-blue-400 bg-blue-950/20",
     },
     {
-      role: "Finance Manager",
+      role: t.auth.roleFinanceManager,
       user: "finance",
       pass: "FinanceMgr@2026!",
       auth: "FinanceAuth@2026!",
-      desc: "Wallet, expenses, supplier payments & UAE VAT records",
-      badge: "Finance Scope",
+      desc: t.auth.descFinanceManager,
+      badge: t.auth.badgeFinanceScope,
       color: "border-amber-500/40 text-amber-400 bg-amber-950/20",
     },
     {
-      role: "Compliance Officer",
+      role: t.auth.roleComplianceOfficer,
       user: "compliance",
       pass: "Compliance@2026!",
       auth: "ComplianceAuth@2026!",
-      desc: "ADAFSA inspection checklists, EFST tracking & audit logs",
-      badge: "Compliance Scope",
+      desc: t.auth.descComplianceOfficer,
+      badge: t.auth.badgeComplianceScope,
       color: "border-emerald-500/40 text-emerald-400 bg-emerald-950/20",
     },
   ];
@@ -150,7 +150,7 @@ export default function LoginPage() {
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
                   required
-                  placeholder="e.g. owner or owner@tasha.ae"
+                  placeholder={t.auth.usernamePlaceholder}
                   className="w-full bg-[#0c0e12] border border-[#1e2433] focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-xl ps-10 rtl:ps-4 rtl:pe-10 pe-4 py-2.5 text-sm text-white placeholder-slate-600 outline-none transition"
                 />
               </div>
@@ -190,7 +190,7 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Verifying Credentials...</span>
+                  <span>{t.auth.verifyingCredentials}</span>
                 </>
               ) : (
                 <>
@@ -204,9 +204,9 @@ export default function LoginPage() {
           <div className="mt-6 pt-5 border-t border-[#1e2433] flex items-center justify-between text-[11px] text-slate-500">
             <span className="flex items-center space-x-1.5 rtl:space-x-reverse text-slate-400">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Two-Level Security Enabled</span>
+              <span>{t.auth.twoLevelSecurityBadge}</span>
             </span>
-            <span>UAE Gov & Tax Compliant</span>
+            <span>{t.auth.uaeGovTaxCompliant}</span>
           </div>
         </div>
 
@@ -214,7 +214,7 @@ export default function LoginPage() {
         <div className="lg:col-span-6 space-y-3">
           <div className="flex items-center space-x-2 rtl:space-x-reverse mb-2 text-slate-400 text-xs font-semibold uppercase tracking-wider">
             <Users className="w-4 h-4 text-rose-400" />
-            <span>Quick-Switch Seed Test Profiles</span>
+            <span>{t.auth.quickSwitchSeed}</span>
           </div>
 
           <div className="space-y-2.5">
@@ -242,9 +242,9 @@ export default function LoginPage() {
                   {acc.desc}
                 </p>
                 <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-1.5 border-t border-slate-800/60">
-                  <span>User: <strong className="text-slate-300">{acc.user}</strong></span>
-                  <span>Login: <strong className="text-slate-300">{acc.pass}</strong></span>
-                  <span className="text-rose-400/90">Auth: <strong>{acc.auth}</strong></span>
+                  <span>{t.auth.userLabel}: <strong className="text-slate-300">{acc.user}</strong></span>
+                  <span>{t.auth.loginLabel}: <strong className="text-slate-300">{acc.pass}</strong></span>
+                  <span className="text-rose-400/90">{t.auth.authLabel}: <strong>{acc.auth}</strong></span>
                 </div>
               </div>
             ))}

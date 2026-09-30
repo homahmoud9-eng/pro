@@ -264,7 +264,7 @@ export default function FinancePage() {
             }`}
           >
             <Wallet className="h-4 w-4 text-emerald-500" />
-            Wallets & Treasury
+            {t.finance.walletOverview}
           </button>
           <button
             onClick={() => setActiveTab('expenses')}
@@ -297,7 +297,7 @@ export default function FinancePage() {
             }`}
           >
             <Percent className="h-4 w-4 text-amber-500" />
-            UAE VAT (5%)
+            {t.finance.vatRecords}
           </button>
         </div>
       </div>
@@ -308,7 +308,7 @@ export default function FinancePage() {
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
-            Two-Level Authorized Financial Operations
+            {language === 'ar' ? 'عمليات مالية معتمدة بمستوى الحماية الثنائي' : 'Two-Level Authorized Financial Operations'}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -316,7 +316,7 @@ export default function FinancePage() {
               className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
-              Book Expense
+              {t.finance.addExpense}
             </button>
             <button
               onClick={() => {
@@ -326,7 +326,7 @@ export default function FinancePage() {
               className="flex items-center gap-2 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
-              Disburse Payment
+              {t.finance.addPayment}
             </button>
           </div>
         </div>
@@ -334,7 +334,7 @@ export default function FinancePage() {
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-sm">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
-            <p>Loading financial ledgers...</p>
+            <p>{t.finance.loading}</p>
           </div>
         ) : (
           <div className="p-6 space-y-6">
@@ -345,35 +345,35 @@ export default function FinancePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg space-y-2">
                     <div className="flex items-center justify-between opacity-80 text-xs font-semibold uppercase tracking-wider">
-                      <span>Total Consolidated Liquidity</span>
+                      <span>{t.finance.totalConsolidatedLiquidity}</span>
                       <Wallet className="h-4 w-4" />
                     </div>
                     <div className="text-3xl font-extrabold font-mono">
                       AED {totalLiquidity.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </div>
-                    <p className="text-[11px] opacity-80">Across corporate banks, petty cash vaults & online gateways</p>
+                    <p className="text-[11px] opacity-80">{t.finance.liquiditySubtext}</p>
                   </div>
 
                   <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      <span>Month Expenses Booked</span>
+                      <span>{t.finance.monthExpensesBooked}</span>
                       <Receipt className="h-4 w-4 text-blue-500" />
                     </div>
                     <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
                       AED {expenses.reduce((a, b) => a + b.totalAmount, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </div>
-                    <p className="text-[11px] text-slate-400">{expenses.length} audited expense vouchers</p>
+                    <p className="text-[11px] text-slate-400">{expenses.length} {t.finance.auditedExpenseVouchers}</p>
                   </div>
 
                   <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      <span>Vendor Settlements Paid</span>
+                      <span>{t.finance.vendorSettlementsPaid}</span>
                       <CreditCard className="h-4 w-4 text-purple-500" />
                     </div>
                     <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
                       AED {payments.reduce((a, b) => a + b.amount, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </div>
-                    <p className="text-[11px] text-slate-400">{payments.length} disbursed payments</p>
+                    <p className="text-[11px] text-slate-400">{payments.length} {t.finance.disbursedPaymentsCount}</p>
                   </div>
                 </div>
 
@@ -381,7 +381,7 @@ export default function FinancePage() {
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Wallet className="h-4 w-4 text-emerald-500" />
-                    Authorized Accounts & Petty Cash Vaults
+                    {t.finance.authorizedAccountsVaults}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {wallets.map((w) => (
@@ -393,10 +393,10 @@ export default function FinancePage() {
                             </span>
                             <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{w.name}</h4>
                           </div>
-                          <span className="text-xs text-slate-400 font-medium">{w.branch?.nameEn || 'Corporate'}</span>
+                          <span className="text-xs text-slate-400 font-medium">{w.branch?.nameEn || (language === 'ar' ? 'عام / المقر' : 'Corporate')}</span>
                         </div>
                         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                          <span className="text-[10px] text-slate-400 uppercase font-semibold">Available Balance</span>
+                          <span className="text-[10px] text-slate-400 uppercase font-semibold">{t.finance.availableBalance}</span>
                           <p className="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
                             {w.currency} {w.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </p>
@@ -414,17 +414,17 @@ export default function FinancePage() {
             {/* 2. EXPENSES TAB */}
             {activeTab === 'expenses' && (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left rtl:text-right text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Voucher #</th>
-                      <th className="px-6 py-3.5">Category & Desc</th>
-                      <th className="px-6 py-3.5">Branch</th>
-                      <th className="px-6 py-3.5">Vendor / TRN</th>
-                      <th className="px-6 py-3.5">Net Amount</th>
-                      <th className="px-6 py-3.5">VAT (5%)</th>
-                      <th className="px-6 py-3.5">Total (AED)</th>
-                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5">{t.finance.voucherNumber}</th>
+                      <th className="px-6 py-3.5">{t.finance.categoryAndDesc}</th>
+                      <th className="px-6 py-3.5">{t.finance.branch}</th>
+                      <th className="px-6 py-3.5">{t.finance.vendorTrn}</th>
+                      <th className="px-6 py-3.5">{t.finance.netAmount}</th>
+                      <th className="px-6 py-3.5">{t.finance.vat}</th>
+                      <th className="px-6 py-3.5">{t.finance.totalAed}</th>
+                      <th className="px-6 py-3.5">{t.common.status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -468,15 +468,15 @@ export default function FinancePage() {
             {/* 3. PAYMENTS TAB */}
             {activeTab === 'payments' && (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left rtl:text-right text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Payment #</th>
-                      <th className="px-6 py-3.5">Disbursement Source</th>
-                      <th className="px-6 py-3.5">Recipient / Supplier</th>
-                      <th className="px-6 py-3.5">Method & Ref</th>
-                      <th className="px-6 py-3.5">Amount Disbursed</th>
-                      <th className="px-6 py-3.5">Timestamp</th>
+                      <th className="px-6 py-3.5">{t.finance.paymentNumber}</th>
+                      <th className="px-6 py-3.5">{t.finance.disbursementSource}</th>
+                      <th className="px-6 py-3.5">{t.finance.recipientSupplier}</th>
+                      <th className="px-6 py-3.5">{t.finance.methodAndRef}</th>
+                      <th className="px-6 py-3.5">{t.finance.amountDisbursed}</th>
+                      <th className="px-6 py-3.5">{t.finance.timestamp}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -490,7 +490,7 @@ export default function FinancePage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="font-semibold text-slate-900 dark:text-white text-xs">
-                            {p.supplier?.nameEn || 'Direct Settlement'}
+                            {p.supplier?.nameEn || (language === 'ar' ? 'تسوية مباشرة' : 'Direct Settlement')}
                           </span>
                         </td>
                         <td className="px-6 py-4">
@@ -503,7 +503,7 @@ export default function FinancePage() {
                           AED {p.amount.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 text-xs font-mono text-slate-500">
-                          {new Date(p.paidAt).toLocaleString('en-GB')}
+                          {new Date(p.paidAt).toLocaleString(language === 'ar' ? 'ar-AE' : 'en-GB')}
                         </td>
                       </tr>
                     ))}
@@ -520,10 +520,10 @@ export default function FinancePage() {
                     <div>
                       <h3 className="text-base font-bold flex items-center gap-2">
                         <Percent className="h-5 w-5 text-amber-500" />
-                        UAE Federal Tax Authority (FTA) VAT Return
+                        {language === 'ar' ? 'إقرار ضريبة القيمة المضافة لهيئة الضرائب الاتحادية' : 'UAE Federal Tax Authority (FTA) VAT Return'}
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Statutory 5% Value Added Tax calculation under UAE Federal Decree-Law No. 8 of 2017
+                        {language === 'ar' ? 'احتساب ضريبة القيمة المضافة بنسبة 5% بموجب المرسوم بقانون اتحادي رقم 8 لسنة 2017' : 'Statutory 5% Value Added Tax calculation under UAE Federal Decree-Law No. 8 of 2017'}
                       </p>
                     </div>
                     <span className="px-3 py-1 bg-amber-500 text-white font-bold text-xs rounded-full">
@@ -533,14 +533,14 @@ export default function FinancePage() {
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t border-amber-500/20">
                     <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                      <span className="text-xs text-slate-400 uppercase font-semibold">Output VAT (5% on Sales)</span>
+                      <span className="text-xs text-slate-400 uppercase font-semibold">{t.finance.outputVat5}</span>
                       <p className="text-xl font-mono font-bold text-slate-900 dark:text-white">
                         AED {vatReport?.outputVat.toFixed(2) || '17,250.00'}
                       </p>
                     </div>
 
                     <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                      <span className="text-xs text-slate-400 uppercase font-semibold">Input VAT (5% on Purchases)</span>
+                      <span className="text-xs text-slate-400 uppercase font-semibold">{t.finance.inputVat5}</span>
                       <p className="text-xl font-mono font-bold text-slate-900 dark:text-white">
                         AED {vatReport?.inputVat.toFixed(2) || '4,860.00'}
                       </p>
@@ -549,13 +549,13 @@ export default function FinancePage() {
 
                   <div className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl flex items-center justify-between shadow-md">
                     <div>
-                      <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Net Payable to FTA (Form 201)</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider opacity-90">{t.finance.netPayableFta}</span>
                       <div className="text-2xl font-mono font-extrabold">
                         AED {vatReport?.netVatDue.toFixed(2) || '12,390.00'}
                       </div>
                     </div>
                     <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-xs font-bold rounded-lg">
-                      STATUS: {vatReport?.status || 'ACCRUED'}
+                      {t.common.status}: {vatReport?.status || 'ACCRUED'}
                     </span>
                   </div>
                 </div>
@@ -569,35 +569,35 @@ export default function FinancePage() {
       {showExpenseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Book Branch Expense</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.finance.bookBranchExpenseModal}</h3>
             <form onSubmit={handleCreateExpense} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Category
+                  {t.finance.category}
                 </label>
                 <select
                   value={expenseForm.category}
                   onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                 >
-                  <option value="MUNICIPALITY_FEES">Abu Dhabi Municipality & License Fees</option>
-                  <option value="UTILITIES">Utilities (ADDC Electricity & Water)</option>
-                  <option value="KITCHEN_MAINTENANCE">Kitchen Equipment Maintenance</option>
-                  <option value="PACKAGING">Takeaway Packaging</option>
-                  <option value="CLEANING_SUPPLIES">ADAFSA Approved Sanitization</option>
+                  <option value="MUNICIPALITY_FEES">{t.finance.catMunicipality}</option>
+                  <option value="UTILITIES">{t.finance.catUtilities}</option>
+                  <option value="KITCHEN_MAINTENANCE">{t.finance.catMaintenance}</option>
+                  <option value="PACKAGING">{t.finance.catPackaging}</option>
+                  <option value="CLEANING_SUPPLIES">{t.finance.catSanitization}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Description
+                  {t.common.description}
                 </label>
                 <input
                   type="text"
                   value={expenseForm.description}
                   onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
                   required
-                  placeholder="e.g. Hood duct degreasing inspection"
+                  placeholder={t.finance.expenseDescPlaceholder}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                 />
               </div>
@@ -605,7 +605,7 @@ export default function FinancePage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Net Amount (AED)
+                    {t.finance.netAmount} (AED)
                   </label>
                   <input
                     type="number"
@@ -622,7 +622,7 @@ export default function FinancePage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    VAT 5% (AED)
+                    {t.finance.vat} (AED)
                   </label>
                   <input
                     type="number"
@@ -639,13 +639,13 @@ export default function FinancePage() {
                   onClick={() => setShowExpenseModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
                 >
-                  Next: Enter Auth Password
+                  {t.security.nextEnterAuthPassword}
                 </button>
               </div>
             </form>
@@ -657,11 +657,11 @@ export default function FinancePage() {
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Disburse Vendor Payment</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.finance.disburseVendorPaymentModal}</h3>
             <form onSubmit={handleCreatePayment} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Source Wallet / Account
+                  {t.finance.disbursementSource}
                 </label>
                 <select
                   value={paymentForm.walletId}
@@ -671,7 +671,7 @@ export default function FinancePage() {
                 >
                   {wallets.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.name} &mdash; Balance: AED {w.balance.toLocaleString('en-US')}
+                      {w.name} &mdash; {t.finance.availableBalance}: AED {w.balance.toLocaleString('en-US')}
                     </option>
                   ))}
                 </select>
@@ -679,7 +679,7 @@ export default function FinancePage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Settlement Amount (AED)
+                  {t.finance.amount} (AED)
                 </label>
                 <input
                   type="number"
@@ -694,13 +694,13 @@ export default function FinancePage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Bank Reference / Transfer ID
+                  {t.finance.methodAndRef}
                 </label>
                 <input
                   type="text"
                   value={paymentForm.referenceNumber}
                   onChange={(e) => setPaymentForm({ ...paymentForm, referenceNumber: e.target.value })}
-                  placeholder="e.g. ADCB-FT-2026-9921"
+                  placeholder={t.finance.paymentRefPlaceholder}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-mono"
                 />
               </div>
@@ -711,13 +711,13 @@ export default function FinancePage() {
                   onClick={() => setShowPaymentModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-sm"
                 >
-                  Next: Enter Auth Password
+                  {t.security.nextEnterAuthPassword}
                 </button>
               </div>
             </form>

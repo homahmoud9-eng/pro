@@ -28,7 +28,7 @@ interface ExpiryItem {
 }
 
 export default function NotificationsPage() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [notifications, setNotifications] = useState<ExpiryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,10 +102,10 @@ export default function NotificationsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           <Bell className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-          {t('nav.notifications')}
+          {t.notifications.title}
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Automated compliance monitoring, upcoming UAE document renewals, and operational threshold triggers.
+          {t.notifications.subtitle}
         </p>
       </div>
 
@@ -113,20 +113,20 @@ export default function NotificationsPage() {
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Active Alerts & Expiry Triggers ({notifications.length})
+            {language === 'ar' ? `التنبيهات النشطة واستحقاقات التجديد (${notifications.length})` : `Active Alerts & Expiry Triggers (${notifications.length})`}
           </span>
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-sm">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
-            <p>Scanning registry for document expirations...</p>
+            <p>{t.notifications.scanning}</p>
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-12 text-center text-slate-400 text-sm space-y-2">
             <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
-            <p className="font-semibold text-slate-700 dark:text-slate-300">All Systems & Documents Compliant</p>
-            <p className="text-xs">No documents or licenses expiring within the next 90 days.</p>
+            <p className="font-semibold text-slate-700 dark:text-slate-300">{t.notifications.allCompliant}</p>
+            <p className="text-xs">{t.notifications.allCompliantDesc}</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -155,7 +155,7 @@ export default function NotificationsPage() {
                           ? 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200'
                           : 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200'
                       }`}>
-                        {alert.category}
+                        {alert.category === 'CRITICAL' ? t.notifications.critical : t.notifications.warning}
                       </span>
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                         {alert.title}
@@ -163,15 +163,15 @@ export default function NotificationsPage() {
                     </div>
 
                     <p className="text-xs text-slate-500">
-                      Scope: <span className="font-semibold text-slate-700 dark:text-slate-300">{alert.entityName}</span>
+                      {t.notifications.scope} <span className="font-semibold text-slate-700 dark:text-slate-300">{alert.entityName}</span>
                     </p>
 
                     {alert.type === 'DOCUMENT_EXPIRY' && (
                       <div className="flex items-center gap-2 text-xs font-mono text-slate-400 pt-1">
                         <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        <span>Expires: {new Date(alert.expiryDate).toLocaleDateString('en-GB')}</span>
+                        <span>{t.notifications.expires} {new Date(alert.expiryDate).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-GB')}</span>
                         <span className="font-bold text-rose-600 dark:text-rose-400">
-                          ({alert.daysRemaining <= 0 ? 'EXPIRED' : `${alert.daysRemaining} days remaining`})
+                          ({alert.daysRemaining <= 0 ? t.notifications.expiredAlert : (language === 'ar' ? `متبقي ${alert.daysRemaining} يوماً` : `${alert.daysRemaining} days remaining`)})
                         </span>
                       </div>
                     )}
@@ -182,8 +182,8 @@ export default function NotificationsPage() {
                   href={alert.link}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors self-end md:self-center shrink-0"
                 >
-                  Inspect Record
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {t.notifications.inspectRecord}
+                  <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
                 </Link>
               </div>
             ))}

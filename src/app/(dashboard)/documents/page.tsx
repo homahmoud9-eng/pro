@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 
 export default function DocumentsPage() {
-  const { t } = useI18n();
+  const { t, locale, tStatus, formatDate } = useI18n();
 
   const [documents, setDocuments] = useState<any[]>([]);
   const [docTypes, setDocTypes] = useState<any[]>([]);
@@ -109,11 +109,11 @@ export default function DocumentsPage() {
 
   const handleConfirmUpload = () => {
     if (!selectedFile) {
-      alert("Please select a PDF file.");
+      alert(t.documents.selectPdfError);
       return;
     }
 
-    setActionTitle("Upload Legal Compliance Document");
+    setActionTitle(t.documents.actionUploadTitle);
     setTargetDescription(`${newTitle} (${selectedFile.name})`);
 
     setPendingAction(() => async (authPassword: string) => {
@@ -133,7 +133,7 @@ export default function DocumentsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      if (!res.ok) throw new Error(data.error || t.common.error);
 
       setUploadModalOpen(false);
       setAuthDialogOpen(false);
@@ -154,7 +154,7 @@ export default function DocumentsPage() {
 
   const handleConfirmReplace = () => {
     if (!replaceFile || !targetDoc) {
-      alert("Please select a new PDF version file.");
+      alert(t.documents.selectPdfError);
       return;
     }
 
@@ -238,10 +238,10 @@ export default function DocumentsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-[#0c0e12] border border-[#1e2433] text-xs text-slate-300 rounded-xl px-3 py-2 outline-none"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="ACTIVE">Active (Valid)</option>
-            <option value="EXPIRING_SOON">Expiring Soon (30 Days)</option>
-            <option value="EXPIRED">Expired</option>
+            <option value="ALL">{t.common.allStatuses}</option>
+            <option value="ACTIVE">{t.documents.statusValid}</option>
+            <option value="EXPIRING_SOON">{t.documents.statusExpiring}</option>
+            <option value="EXPIRED">{t.documents.statusExpired}</option>
           </select>
 
           <select
@@ -249,10 +249,10 @@ export default function DocumentsPage() {
             onChange={(e) => setEntityFilter(e.target.value)}
             className="bg-[#0c0e12] border border-[#1e2433] text-xs text-slate-300 rounded-xl px-3 py-2 outline-none"
           >
-            <option value="">All Categories</option>
-            <option value="ORGANIZATION">Organization Legal</option>
-            <option value="BRANCH">Branch Permits</option>
-            <option value="EMPLOYEE">Employee Identity</option>
+            <option value="">{t.documents.categoryAll}</option>
+            <option value="ORGANIZATION">{t.documents.categoryOrg}</option>
+            <option value="BRANCH">{t.documents.categoryBranch}</option>
+            <option value="EMPLOYEE">{t.documents.categoryEmployee}</option>
           </select>
         </div>
       </div>
@@ -262,7 +262,7 @@ export default function DocumentsPage() {
         {loading ? (
           <div className="col-span-full py-16 text-center text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-rose-500" />
-            <span>Loading compliance archive...</span>
+            <span>{t.documents.loading}</span>
           </div>
         ) : documents.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500 bg-[#141720] border border-[#1e2433] rounded-3xl">
@@ -287,7 +287,7 @@ export default function DocumentsPage() {
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-rose-400">
-                      {doc.documentType?.nameEn}
+                      {locale === "ar" ? doc.documentType?.nameAr || doc.documentType?.nameEn : doc.documentType?.nameEn}
                     </span>
                     <span
                       className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full border ${
@@ -298,7 +298,7 @@ export default function DocumentsPage() {
                           : "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
                       }`}
                     >
-                      {doc.status}
+                      {tStatus(doc.status)}
                     </span>
                   </div>
 
@@ -315,12 +315,12 @@ export default function DocumentsPage() {
                     {doc.expiryDate && (
                       <div className="flex items-center space-x-1.5 rtl:space-x-reverse text-amber-400/90">
                         <Calendar className="w-3.5 h-3.5" />
-                        <span>Expires: {new Date(doc.expiryDate).toLocaleDateString()}</span>
+                        <span>{t.pdfViewer.expires} {formatDate(doc.expiryDate)}</span>
                       </div>
                     )}
                     <div className="flex items-center space-x-1.5 rtl:space-x-reverse text-slate-500">
                       <Layers className="w-3.5 h-3.5 text-rose-400" />
-                      <span>Version: {doc.currentVersion?.versionNumber || 1}</span>
+                      <span>{t.pdfViewer.version}: {doc.currentVersion?.versionNumber || 1}</span>
                       <span>•</span>
                       <span>{doc.currentVersion?.originalFilename || "document.pdf"}</span>
                     </div>
@@ -337,13 +337,13 @@ export default function DocumentsPage() {
                     className="flex-1 py-1.5 px-3 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 rtl:space-x-reverse transition"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>View PDF</span>
+                    <span>{t.documents.viewPdf}</span>
                   </button>
 
                   <button
                     onClick={() => handleOpenReplace(doc)}
                     className="p-2 hover:text-white text-slate-400 bg-[#0c0e12] border border-[#1e2433] rounded-xl hover:bg-slate-800 transition"
-                    title="Replace with New Version (Audited)"
+                    title={t.documents.replaceTitle}
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
@@ -351,7 +351,7 @@ export default function DocumentsPage() {
                   <button
                     onClick={() => handleOpenHistory(doc)}
                     className="p-2 hover:text-white text-slate-400 bg-[#0c0e12] border border-[#1e2433] rounded-xl hover:bg-slate-800 transition"
-                    title="Inspect Version History & Checksums"
+                    title={t.documents.historyTitle}
                   >
                     <History className="w-3.5 h-3.5" />
                   </button>
@@ -369,7 +369,7 @@ export default function DocumentsPage() {
             <div className="flex items-center justify-between border-b border-[#1e2433] pb-3">
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <FilePlus className="w-5 h-5 text-rose-500" />
-                <h3 className="text-sm font-bold text-white">Upload Compliance PDF</h3>
+                <h3 className="text-sm font-bold text-white">{t.documents.uploadModalTitle}</h3>
               </div>
               <button onClick={() => setUploadModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -378,19 +378,19 @@ export default function DocumentsPage() {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Document Title *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.documents.documentTitleLabel}</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Commercial Tenancy Contract 2026"
+                  placeholder={t.documents.documentTitlePlaceholder}
                   className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Document Type *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.documents.documentTypeLabel}</label>
                   <select
                     value={newTypeId}
                     onChange={(e) => setNewTypeId(e.target.value)}
@@ -398,18 +398,18 @@ export default function DocumentsPage() {
                   >
                     {docTypes.map((dt) => (
                       <option key={dt.id} value={dt.id}>
-                        {dt.nameEn}
+                        {locale === "ar" ? dt.nameAr || dt.nameEn : dt.nameEn}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Reference Number</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.documents.refNumberLabel}</label>
                   <input
                     type="text"
                     value={newRef}
                     onChange={(e) => setNewRef(e.target.value)}
-                    placeholder="e.g. CN-1984210"
+                    placeholder={t.documents.refNumberPlaceholder}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none"
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function DocumentsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Issue Date</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.documents.issueDate}</label>
                   <input
                     type="date"
                     value={newIssueDate}
@@ -426,7 +426,7 @@ export default function DocumentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Expiry Date</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.documents.expiryDate}</label>
                   <input
                     type="date"
                     value={newExpiryDate}
@@ -437,16 +437,13 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Select PDF File *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.documents.selectPdfFile}</label>
                 <input
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                   className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-600/20 file:text-rose-400 hover:file:bg-rose-600/30"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">
-                  Enforces %PDF- magic bytes validation and SHA-256 integrity calculation.
-                </span>
               </div>
             </div>
 
@@ -455,14 +452,14 @@ export default function DocumentsPage() {
                 onClick={() => setUploadModalOpen(false)}
                 className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleConfirmUpload}
                 disabled={!newTitle || !selectedFile}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/40 disabled:opacity-50"
               >
-                Authorize & Upload
+                {t.auth.confirmAndExecute}
               </button>
             </div>
           </div>
@@ -475,8 +472,10 @@ export default function DocumentsPage() {
           <div className="w-full max-w-lg bg-[#141720] border border-[#1e2433] rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1e2433] pb-3">
               <div>
-                <h3 className="text-sm font-bold text-white">Upload New Document Version</h3>
-                <p className="text-xs text-rose-400 font-mono">Current: Version {targetDoc.currentVersion?.versionNumber || 1}</p>
+                <h3 className="text-sm font-bold text-white">{t.documents.uploadNewVersionModalTitle}</h3>
+                <p className="text-xs text-rose-400 font-mono">
+                  {t.pdfViewer.version}: {targetDoc.currentVersion?.versionNumber || 1}
+                </p>
               </div>
               <button onClick={() => setReplaceModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
@@ -485,11 +484,11 @@ export default function DocumentsPage() {
 
             <div className="space-y-3 text-xs">
               <div className="p-3 bg-[#0c0e12] rounded-xl text-slate-400">
-                Document: <strong className="text-white">{targetDoc.title}</strong>
+                {t.documents.legal}: <strong className="text-white">{targetDoc.title}</strong>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">New Expiry Date</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.documents.newExpiryDate}</label>
                 <input
                   type="date"
                   value={replaceExpiry}
@@ -499,27 +498,24 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Version Notes / Reason</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.documents.versionNotesLabel}</label>
                 <input
                   type="text"
                   value={replaceNotes}
                   onChange={(e) => setReplaceNotes(e.target.value)}
-                  placeholder="e.g. Annual commercial license renewal"
+                  placeholder={t.documents.versionNotesPlaceholder}
                   className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">New PDF Attachment *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.documents.newPdfAttachment}</label>
                 <input
                   type="file"
                   accept="application/pdf"
                   onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
                   className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-600/20 file:text-rose-400 hover:file:bg-rose-600/30"
                 />
-                <span className="text-[10px] text-slate-500 mt-1 block">
-                  Previous version will remain accessible in historical audit records.
-                </span>
               </div>
             </div>
 
@@ -528,14 +524,14 @@ export default function DocumentsPage() {
                 onClick={() => setReplaceModalOpen(false)}
                 className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleConfirmReplace}
                 disabled={!replaceFile}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/40 disabled:opacity-50"
               >
-                Authorize New Version
+                {t.auth.confirmAndExecute}
               </button>
             </div>
           </div>
@@ -548,7 +544,7 @@ export default function DocumentsPage() {
           <div className="w-full max-w-xl bg-[#141720] border-s border-[#1e2433] h-full flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
             <div className="p-6 bg-[#0f1218] border-b border-[#1e2433] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">Document Version History</h3>
+                <h3 className="text-base font-bold text-white">{t.documents.versionHistoryModalTitle}</h3>
                 <p className="text-xs text-rose-400 font-mono truncate max-w-md">
                   {historyDoc.document.title}
                 </p>
@@ -571,22 +567,22 @@ export default function DocumentsPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white flex items-center space-x-1.5 rtl:space-x-reverse">
                         <Layers className="w-4 h-4 text-rose-400" />
-                        <span>Version {ver.versionNumber}</span>
+                        <span>{t.pdfViewer.version} {ver.versionNumber}</span>
                         {historyDoc.document.currentVersionId === ver.id && (
                           <span className="text-[10px] bg-emerald-950/40 text-emerald-400 border border-emerald-800/40 px-2 py-0.5 rounded-full font-mono">
-                            Current
+                            {t.documents.statusValid}
                           </span>
                         )}
                       </span>
                       <span className="text-slate-500 font-mono text-[10px]">
-                        {new Date(ver.createdAt).toLocaleString()}
+                        {formatDate(ver.createdAt)}
                       </span>
                     </div>
 
                     <div className="text-[11px] text-slate-400">
-                      <div>File: <span className="font-mono text-white">{ver.originalFilename}</span></div>
-                      <div>Uploaded By: <span className="text-slate-200">{ver.uploadedBy || "System"}</span></div>
-                      {ver.notes && <div>Notes: <span className="text-slate-300">{ver.notes}</span></div>}
+                      <div>{t.documents.fileLabel} <span className="font-mono text-white">{ver.originalFilename}</span></div>
+                      <div>{t.documents.uploadedBy}: <span className="text-slate-200">{ver.uploadedBy || "System"}</span></div>
+                      {ver.notes && <div>{t.documents.notesLabel} <span className="text-slate-300">{ver.notes}</span></div>}
                     </div>
 
                     <div className="p-2 bg-slate-900/60 rounded-xl font-mono text-[10px] text-slate-500 break-all">

@@ -682,7 +682,7 @@ export default function EmployeesPage() {
                     type="text"
                     value={newEmp.nameEn}
                     onChange={(e) => setNewEmp({ ...newEmp, nameEn: e.target.value })}
-                    placeholder="e.g. John Doe"
+                    placeholder={locale === "ar" ? "مثال: جون دو" : "e.g. John Doe"}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
                   />
                 </div>
@@ -695,7 +695,7 @@ export default function EmployeesPage() {
                     dir="rtl"
                     value={newEmp.nameAr}
                     onChange={(e) => setNewEmp({ ...newEmp, nameAr: e.target.value })}
-                    placeholder="مثال: جون دو"
+                    placeholder={locale === "ar" ? "مثال: أحمد المحمود" : "e.g. Ahmed Al Mahmoud"}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
                   />
                 </div>
@@ -710,7 +710,7 @@ export default function EmployeesPage() {
                     type="text"
                     value={newEmp.jobTitle}
                     onChange={(e) => setNewEmp({ ...newEmp, jobTitle: e.target.value })}
-                    placeholder="e.g. Commis Chef, Barista, Waiter"
+                    placeholder={locale === "ar" ? "مثال: طاهي، باريستا، نادل" : "e.g. Commis Chef, Barista, Waiter"}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
                   />
                 </div>

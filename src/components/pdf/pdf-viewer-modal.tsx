@@ -74,7 +74,7 @@ export function PdfViewerModal({
               <div className="flex items-center space-x-2.5 rtl:space-x-reverse text-xs text-slate-400">
                 <span className="flex items-center space-x-1 rtl:space-x-reverse">
                   <Layers className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Version {versionNumber}</span>
+                  <span>{t.pdfViewer.version} {versionNumber}</span>
                 </span>
                 {referenceNumber && (
                   <>
@@ -88,7 +88,7 @@ export function PdfViewerModal({
                     <span className="flex items-center space-x-1 rtl:space-x-reverse text-amber-400">
                       <Calendar className="w-3 h-3" />
                       <span>
-                        Expires: {new Date(expiryDate).toLocaleDateString()}
+                        {t.pdfViewer.expires} {new Date(expiryDate).toLocaleDateString()}
                       </span>
                     </span>
                   </>
@@ -102,7 +102,7 @@ export function PdfViewerModal({
             <div className="flex items-center bg-[#0c0e12] border border-slate-800 rounded-xl px-2 py-1 space-x-1 rtl:space-x-reverse text-slate-300">
               <button
                 onClick={handleZoomOut}
-                title="Zoom Out"
+                title={t.pdfViewer.zoomOut}
                 className="p-1.5 hover:text-white rounded-lg hover:bg-slate-800 transition"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -110,7 +110,7 @@ export function PdfViewerModal({
               <span className="text-xs font-mono px-1.5">{zoom}%</span>
               <button
                 onClick={handleZoomIn}
-                title="Zoom In"
+                title={t.pdfViewer.zoomIn}
                 className="p-1.5 hover:text-white rounded-lg hover:bg-slate-800 transition"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -119,7 +119,7 @@ export function PdfViewerModal({
 
             <button
               onClick={handleToggleFullscreen}
-              title="Toggle Fullscreen"
+              title={t.pdfViewer.toggleFullscreen}
               className="p-2 bg-[#0c0e12] border border-slate-800 hover:text-white text-slate-400 rounded-xl hover:bg-slate-800 transition"
             >
               <Maximize2 className="w-4 h-4" />
@@ -163,7 +163,7 @@ export function PdfViewerModal({
         <div className="bg-[#0f1218] border-t border-slate-800/80 px-5 py-2.5 flex items-center justify-between text-xs text-slate-500">
           <div className="flex items-center space-x-1.5 rtl:space-x-reverse text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Secure UAE Enterprise Document Viewer • Private Storage Mode</span>
+            <span>{t.pdfViewer.secureViewer}</span>
           </div>
           <div>ID: {documentId.slice(0, 8)}...</div>
         </div>

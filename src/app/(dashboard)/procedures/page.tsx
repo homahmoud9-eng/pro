@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 export default function ProceduresPage() {
-  const { t } = useI18n();
+  const { t, locale, tStatus, tPriority, formatDate } = useI18n();
 
   const [procedures, setProcedures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,10 +158,10 @@ export default function ProceduresPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-[#0c0e12] border border-[#1e2433] text-xs text-slate-300 rounded-xl px-3 py-2 outline-none"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETED">Completed</option>
+            <option value="ALL">{t.common.allStatuses}</option>
+            <option value="PENDING">{t.common.pending}</option>
+            <option value="IN_PROGRESS">{t.common.inProgress}</option>
+            <option value="COMPLETED">{t.common.completed}</option>
           </select>
 
           <select
@@ -169,16 +169,16 @@ export default function ProceduresPage() {
             onChange={(e) => setPriorityFilter(e.target.value)}
             className="bg-[#0c0e12] border border-[#1e2433] text-xs text-slate-300 rounded-xl px-3 py-2 outline-none"
           >
-            <option value="ALL">All Priorities</option>
-            <option value="URGENT">Urgent</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
+            <option value="ALL">{t.common.allPriorities}</option>
+            <option value="URGENT">{t.common.urgent}</option>
+            <option value="HIGH">{t.common.high}</option>
+            <option value="MEDIUM">{t.common.medium}</option>
+            <option value="LOW">{t.common.low}</option>
           </select>
         </div>
 
         <div className="text-xs text-slate-500 font-mono">
-          Total: {procedures.length} workflows
+          {t("procedures.totalWorkflows", { count: procedures.length })}
         </div>
       </div>
 
@@ -187,7 +187,7 @@ export default function ProceduresPage() {
         {loading ? (
           <div className="py-16 text-center text-slate-500">
             <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-rose-500" />
-            <span>Loading procedures...</span>
+            <span>{t.procedures.loading}</span>
           </div>
         ) : procedures.length === 0 ? (
           <div className="py-16 text-center text-slate-500 bg-[#141720] border border-[#1e2433] rounded-3xl">
@@ -218,7 +218,7 @@ export default function ProceduresPage() {
                             : "bg-purple-950/40 text-purple-400 border-purple-800/40"
                         }`}
                       >
-                        {proc.priority}
+                        {tPriority(proc.priority)}
                       </span>
                       <span
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
@@ -227,7 +227,7 @@ export default function ProceduresPage() {
                             : "bg-amber-950/40 text-amber-400 border-amber-800/40"
                         }`}
                       >
-                        {proc.status}
+                        {tStatus(proc.status)}
                       </span>
                     </div>
 
@@ -309,7 +309,7 @@ export default function ProceduresPage() {
                               onClick={() => handleAdvanceStep(proc, step.stepNumber, step.title)}
                               className="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-[11px] font-semibold flex items-center space-x-1 rtl:space-x-reverse flex-shrink-0 transition"
                             >
-                              <span>Complete Step</span>
+                              <span>{t.procedures.completeStep}</span>
                               <ArrowRight className="w-3 h-3 rtl:rotate-180" />
                             </button>
                           )}
@@ -329,7 +329,7 @@ export default function ProceduresPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-[#141720] border border-[#1e2433] rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1e2433] pb-3">
-              <h3 className="text-sm font-bold text-white">Start New Procedure</h3>
+              <h3 className="text-sm font-bold text-white">{t.procedures.modalTitle}</h3>
               <button onClick={() => setCreateModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -337,49 +337,49 @@ export default function ProceduresPage() {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Title *</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.procedures.titleLabel}</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. MOHRE Work Permit Renewal - Senior Chef"
+                  placeholder={t.procedures.titlePlaceholder}
                   className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Type *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.procedures.typeLabel}</label>
                   <select
                     value={newType}
                     onChange={(e) => setNewType(e.target.value)}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none"
                   >
-                    <option value="VISA_RENEWAL">Visa Renewal</option>
-                    <option value="TRADE_LICENSE_RENEWAL">Trade License Renewal</option>
-                    <option value="NEW_ONBOARDING">New Employee Onboarding</option>
-                    <option value="FOOD_SAFETY_REVIEW">Food Safety Compliance Review</option>
-                    <option value="EXIT">Employee Exit Settlement</option>
+                    <option value="VISA_RENEWAL">{t.procedures.typeVisaRenewal}</option>
+                    <option value="TRADE_LICENSE_RENEWAL">{t.procedures.typeTradeLicense}</option>
+                    <option value="NEW_ONBOARDING">{t.procedures.typeOnboarding}</option>
+                    <option value="FOOD_SAFETY_REVIEW">{t.procedures.typeFoodSafety}</option>
+                    <option value="EXIT">{t.procedures.typeExitSettlement}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Priority</label>
+                  <label className="block text-slate-300 font-semibold mb-1">{t.procedures.priorityLabel}</label>
                   <select
                     value={newPriority}
                     onChange={(e) => setNewPriority(e.target.value)}
                     className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none"
                   >
-                    <option value="URGENT">Urgent</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
+                    <option value="URGENT">{t.common.urgent}</option>
+                    <option value="HIGH">{t.common.high}</option>
+                    <option value="MEDIUM">{t.common.medium}</option>
+                    <option value="LOW">{t.common.low}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Target Due Date</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.procedures.targetDueDate}</label>
                 <input
                   type="date"
                   value={newDueDate}
@@ -389,12 +389,12 @@ export default function ProceduresPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Description / Notes</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.procedures.descriptionLabel}</label>
                 <textarea
                   rows={2}
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  placeholder="Details regarding government requirements..."
+                  placeholder={t.procedures.descriptionPlaceholder}
                   className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
@@ -405,14 +405,14 @@ export default function ProceduresPage() {
                 onClick={() => setCreateModalOpen(false)}
                 className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleConfirmCreate}
                 disabled={!newTitle}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/40 disabled:opacity-50"
               >
-                Authorize & Initiate
+                {t.auth.confirmAndExecute}
               </button>
             </div>
           </div>

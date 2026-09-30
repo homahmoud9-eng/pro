@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 export default function BusinessPage() {
-  const { t } = useI18n();
+  const { t, locale, tStatus } = useI18n();
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +81,7 @@ export default function BusinessPage() {
         body: JSON.stringify({ ...editForm, authorizationPassword: authPassword }),
       });
       const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || "Update failed");
+      if (!res.ok) throw new Error(resData.error || t.common.error);
       setEditModalOpen(false);
       setAuthDialogOpen(false);
       await loadData();
@@ -93,7 +93,7 @@ export default function BusinessPage() {
     return (
       <div className="py-20 text-center text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-rose-500" />
-        <span>Loading company and branch information...</span>
+        <span>{t.business.loading}</span>
       </div>
     );
   }
@@ -111,14 +111,14 @@ export default function BusinessPage() {
           <div>
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                {organization.nameEn}
+                {locale === "ar" ? organization.nameAr || organization.nameEn : organization.nameEn}
               </h1>
               <span className="text-[10px] font-mono bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-semibold">
                 {organization.code}
               </span>
             </div>
             <p className="text-xs text-rose-400 font-semibold mt-0.5">
-              {organization.nameAr}
+              {locale === "ar" ? organization.nameEn : organization.nameAr}
             </p>
 
             <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400 mt-3">
@@ -142,7 +142,7 @@ export default function BusinessPage() {
           className="px-4 py-2.5 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center space-x-2 rtl:space-x-reverse transition shadow-sm"
         >
           <Edit2 className="w-3.5 h-3.5 text-rose-400" />
-          <span>Edit Profile</span>
+          <span>{t.business.editProfile}</span>
         </button>
       </div>
 
@@ -150,7 +150,7 @@ export default function BusinessPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold text-white flex items-center space-x-2 rtl:space-x-reverse">
-            <span>Restaurant Branches ({branches.length})</span>
+            <span>{t.business.restaurantBranches} ({branches.length})</span>
           </h2>
         </div>
 
@@ -165,11 +165,15 @@ export default function BusinessPage() {
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-950/40 border border-rose-800/40 text-rose-400 font-bold">
                     {b.code}
                   </span>
-                  <h3 className="text-sm font-bold text-white mt-1.5">{b.nameEn}</h3>
-                  <p className="text-xs text-slate-400">{b.nameAr}</p>
+                  <h3 className="text-sm font-bold text-white mt-1.5">
+                    {locale === "ar" ? b.nameAr || b.nameEn : b.nameEn}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {locale === "ar" ? b.nameEn : b.nameAr}
+                  </p>
                 </div>
                 <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-800/40">
-                  {b.status}
+                  {b.status === "ACTIVE" ? t.business.activeStatus : t.business.inactiveStatus}
                 </span>
               </div>
 
@@ -187,15 +191,15 @@ export default function BusinessPage() {
               <div className="pt-2 border-t border-[#1e2433] grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="bg-[#0c0e12] p-2 rounded-xl">
                   <div className="font-bold text-white">{b._count.employees}</div>
-                  <div className="text-[10px] text-slate-500">Staff</div>
+                  <div className="text-[10px] text-slate-500">{t.business.staffCount}</div>
                 </div>
                 <div className="bg-[#0c0e12] p-2 rounded-xl">
                   <div className="font-bold text-white">{b._count.documents}</div>
-                  <div className="text-[10px] text-slate-500">Docs</div>
+                  <div className="text-[10px] text-slate-500">{t.business.docsCount}</div>
                 </div>
                 <div className="bg-[#0c0e12] p-2 rounded-xl">
                   <div className="font-bold text-white">{b._count.inventoryItems}</div>
-                  <div className="text-[10px] text-slate-500">Items</div>
+                  <div className="text-[10px] text-slate-500">{t.business.itemsCount}</div>
                 </div>
               </div>
             </div>
@@ -207,7 +211,7 @@ export default function BusinessPage() {
       <div className="space-y-4">
         <h2 className="text-base font-bold text-white flex items-center space-x-2 rtl:space-x-reverse">
           <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span>Official Licenses & Legal Permits ({legalDocs.length})</span>
+          <span>{t.business.licensesAndPermits} ({legalDocs.length})</span>
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,7 +223,7 @@ export default function BusinessPage() {
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-900 text-rose-400 font-semibold border border-slate-800">
-                    {doc.documentType?.nameEn}
+                    {locale === "ar" ? doc.documentType?.nameAr || doc.documentType?.nameEn : doc.documentType?.nameEn}
                   </span>
                   <span
                     className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
@@ -228,7 +232,7 @@ export default function BusinessPage() {
                         : "bg-rose-950/40 text-rose-400 border-rose-800/40"
                     }`}
                   >
-                    {doc.status}
+                    {tStatus(doc.status)}
                   </span>
                 </div>
                 <h3 className="text-xs font-bold text-white truncate max-w-sm">
@@ -238,7 +242,7 @@ export default function BusinessPage() {
                   Ref: {doc.referenceNumber || "N/A"}
                   {doc.expiryDate && (
                     <span className="ms-3 text-amber-400 font-sans">
-                      Expires: {new Date(doc.expiryDate).toLocaleDateString()}
+                      {t.pdfViewer.expires} {new Date(doc.expiryDate).toLocaleDateString(locale === "ar" ? "ar-AE" : "en-GB")}
                     </span>
                   )}
                 </div>
@@ -252,7 +256,7 @@ export default function BusinessPage() {
                 className="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center space-x-1.5 rtl:space-x-reverse transition flex-shrink-0"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>Preview PDF</span>
+                <span>{t.business.previewPdf}</span>
               </button>
             </div>
           ))}
@@ -264,7 +268,7 @@ export default function BusinessPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-md bg-[#141720] border border-[#1e2433] rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1e2433] pb-3">
-              <h3 className="text-sm font-bold text-white">Edit Company Profile</h3>
+              <h3 className="text-sm font-bold text-white">{t.business.editCompanyProfile}</h3>
               <button onClick={() => setEditModalOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
@@ -272,7 +276,7 @@ export default function BusinessPage() {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Company Name (English)</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.business.companyNameEn}</label>
                 <input
                   type="text"
                   value={editForm.nameEn}
@@ -282,7 +286,7 @@ export default function BusinessPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">الاسم القانوني (عربي)</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.business.companyNameAr}</label>
                 <input
                   type="text"
                   dir="rtl"
@@ -293,7 +297,7 @@ export default function BusinessPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Official Phone</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.business.officialPhone}</label>
                 <input
                   type="text"
                   value={editForm.phone}
@@ -303,7 +307,7 @@ export default function BusinessPage() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Address / Location</label>
+                <label className="block text-slate-300 font-semibold mb-1">{t.business.addressLocation}</label>
                 <input
                   type="text"
                   value={editForm.address}
@@ -318,13 +322,13 @@ export default function BusinessPage() {
                 onClick={() => setEditModalOpen(false)}
                 className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold"
               >
-                Cancel
+                {t.common.cancel}
               </button>
               <button
                 onClick={handleConfirmEdit}
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/40"
               >
-                Authorize & Save
+                {t.auth.confirmAndExecute}
               </button>
             </div>
           </div>
@@ -348,8 +352,8 @@ export default function BusinessPage() {
       {/* Authorization Password Dialog */}
       <AuthorizationPasswordDialog
         isOpen={authDialogOpen}
-        actionTitle="Update Company Profile"
-        targetDescription={organization.nameEn}
+        actionTitle={t.business.editCompanyProfile}
+        targetDescription={locale === "ar" ? organization.nameAr : organization.nameEn}
         onConfirm={async (pwd) => {
           if (pendingAction) {
             await pendingAction(pwd);

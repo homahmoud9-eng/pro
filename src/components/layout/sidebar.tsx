@@ -44,10 +44,10 @@ export function Sidebar() {
         </div>
         <div>
           <div className="text-sm font-bold text-white tracking-wide">
-            {locale === "ar" ? "مجموعة طاشا" : "TASHA GROUP"}
+            {t.common.tashaGroup}
           </div>
           <div className="text-[10px] text-rose-400 font-medium uppercase tracking-wider">
-            {locale === "ar" ? "تشغيل المطاعم المتقدمة - الإمارات" : "UAE Enterprise Operations"}
+            {t.common.enterpriseSubtitle}
           </div>
         </div>
       </div>
@@ -87,10 +87,10 @@ export function Sidebar() {
           <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
           <div className="text-[11px] leading-tight">
             <span className="text-white font-medium block">
-              {locale === "ar" ? "معايير أدافسيا ووزارة الموارد البشرية" : "ADAFSA & MOHRE"}
+              {t.common.adafsaMohre}
             </span>
             <span className="text-slate-500">
-              {locale === "ar" ? "معتمد في إمارة أبوظبي 2026" : "Abu Dhabi 2026 Compliant"}
+              {t.common.abuDhabiCompliant}
             </span>
           </div>
         </div>

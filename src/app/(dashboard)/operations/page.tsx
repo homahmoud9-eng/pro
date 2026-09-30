@@ -242,10 +242,10 @@ export default function OperationsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Package className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-            {t('nav.operations')}
+            {t.operations.title}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Abu Dhabi multi-branch supply chain, atomic inventory transfers, real-time recipe food cost calculations, and supplier governance.
+            {t.operations.subtitle}
           </p>
         </div>
 
@@ -260,7 +260,7 @@ export default function OperationsPage() {
             }`}
           >
             <Package className="h-4 w-4 text-emerald-500" />
-            {t('operations.inventory')}
+            {t.operations.inventory}
           </button>
           <button
             onClick={() => setActiveTab('recipes')}
@@ -271,7 +271,7 @@ export default function OperationsPage() {
             }`}
           >
             <UtensilsCrossed className="h-4 w-4 text-amber-500" />
-            {t('operations.recipes')}
+            {t.operations.recipes}
           </button>
           <button
             onClick={() => setActiveTab('waste')}
@@ -282,7 +282,7 @@ export default function OperationsPage() {
             }`}
           >
             <Trash2 className="h-4 w-4 text-rose-500" />
-            {t('operations.waste')}
+            {t.operations.waste}
           </button>
           <button
             onClick={() => setActiveTab('suppliers')}
@@ -293,7 +293,7 @@ export default function OperationsPage() {
             }`}
           >
             <Building className="h-4 w-4 text-blue-500" />
-            {t('operations.suppliers')}
+            {t.operations.suppliers}
           </button>
         </div>
       </div>
@@ -303,13 +303,13 @@ export default function OperationsPage() {
         {/* Subheader Toolbar */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 rtl:left-auto rtl:right-3.5 top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search items, ingredients, codes..."
-              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              placeholder={t.operations.searchPlaceholder}
+              className="w-full pl-10 rtl:pl-4 rtl:pr-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
 
@@ -320,7 +320,7 @@ export default function OperationsPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
               >
                 <ArrowRightLeft className="h-4 w-4" />
-                Inter-Branch Transfer
+                {t.operations.interBranchTransferTitle}
               </button>
             )}
             {activeTab === 'waste' && (
@@ -329,7 +329,7 @@ export default function OperationsPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
               >
                 <Plus className="h-4 w-4" />
-                Record Waste
+                {t.operations.recordWasteTitle}
               </button>
             )}
           </div>
@@ -339,30 +339,30 @@ export default function OperationsPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-sm">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
-            <p>Loading operations data...</p>
+            <p>{t.operations.loading}</p>
           </div>
         ) : (
           <>
             {/* 1. INVENTORY TAB */}
             {activeTab === 'inventory' && (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left rtl:text-right text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Item Code & Name</th>
-                      <th className="px-6 py-3.5">Category</th>
-                      <th className="px-6 py-3.5">Branch</th>
-                      <th className="px-6 py-3.5">Current Stock</th>
-                      <th className="px-6 py-3.5">Unit Cost</th>
-                      <th className="px-6 py-3.5">Total Value</th>
-                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5">{t.operations.itemCodeAndName}</th>
+                      <th className="px-6 py-3.5">{t.common.category}</th>
+                      <th className="px-6 py-3.5">{t.operations.branchCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.currentStock}</th>
+                      <th className="px-6 py-3.5">{t.operations.unitCost}</th>
+                      <th className="px-6 py-3.5">{t.operations.totalValue}</th>
+                      <th className="px-6 py-3.5">{t.common.status}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {inventory.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-slate-400 text-sm">
-                          No inventory items recorded yet.
+                          {t.operations.noInventoryRecorded}
                         </td>
                       </tr>
                     ) : (
@@ -400,12 +400,12 @@ export default function OperationsPage() {
                               {isLowStock ? (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900">
                                   <AlertTriangle className="h-3.5 w-3.5" />
-                                  Low Stock (&le; {item.minimumStock})
+                                  {language === 'ar' ? `مخزون منخفض (≤ ${item.minimumStock})` : `Low Stock (≤ ${item.minimumStock})`}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
                                   <CheckCircle className="h-3.5 w-3.5" />
-                                  Optimal
+                                  {t.operations.optimalBadge}
                                 </span>
                               )}
                             </td>
@@ -451,15 +451,15 @@ export default function OperationsPage() {
                         {/* Financial Metrics */}
                         <div className="grid grid-cols-3 gap-2 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-center">
                           <div>
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold">Selling</span>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">{t.operations.selling}</span>
                             <p className="text-xs font-bold text-slate-900 dark:text-white font-mono">AED {recipe.sellingPrice.toFixed(2)}</p>
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold">Cost</span>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">{t.operations.cost}</span>
                             <p className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono">AED {recipe.portionCost.toFixed(2)}</p>
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold">Margin</span>
+                            <span className="text-[10px] text-slate-400 uppercase font-semibold">{t.operations.margin}</span>
                             <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">{marginPct}%</p>
                           </div>
                         </div>
@@ -468,7 +468,7 @@ export default function OperationsPage() {
                         <div>
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <Layers className="h-3.5 w-3.5 text-slate-400" />
-                            Ingredients Breakdown ({recipe.items.length})
+                            {language === 'ar' ? `تفاصيل المكونات (${recipe.items.length})` : `Ingredients Breakdown (${recipe.items.length})`}
                           </p>
                           <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
                             {recipe.items.map((it) => (
@@ -493,30 +493,30 @@ export default function OperationsPage() {
             {/* 3. WASTE MANAGEMENT TAB */}
             {activeTab === 'waste' && (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left rtl:text-right text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Date</th>
-                      <th className="px-6 py-3.5">Inventory Item</th>
-                      <th className="px-6 py-3.5">Branch</th>
-                      <th className="px-6 py-3.5">Reason</th>
-                      <th className="px-6 py-3.5">Quantity</th>
-                      <th className="px-6 py-3.5">Total Waste Cost</th>
-                      <th className="px-6 py-3.5">Recorded By</th>
+                      <th className="px-6 py-3.5">{t.operations.dateCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.inventoryItemCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.branchCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.reasonCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.quantityCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.totalWasteCostCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.recordedByCol}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {wasteRecords.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-slate-400 text-sm">
-                          No waste records registered.
+                          {language === 'ar' ? 'لا توجد سجلات هدر مسجلة.' : 'No waste records registered.'}
                         </td>
                       </tr>
                     ) : (
                       wasteRecords.map((w) => (
                         <tr key={w.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                            {new Date(w.recordedAt).toLocaleDateString('en-GB')}
+                            {new Date(w.recordedAt).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-GB')}
                           </td>
                           <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                             {w.inventoryItem?.nameEn}
@@ -549,23 +549,23 @@ export default function OperationsPage() {
             {/* 4. SUPPLIERS TAB */}
             {activeTab === 'suppliers' && (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left rtl:text-right text-sm">
                   <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="px-6 py-3.5">Supplier Name</th>
-                      <th className="px-6 py-3.5">TRN (Tax #)</th>
-                      <th className="px-6 py-3.5">Category</th>
-                      <th className="px-6 py-3.5">Contact / Phone</th>
-                      <th className="px-6 py-3.5">Payment Terms</th>
-                      <th className="px-6 py-3.5">Outstanding Balance</th>
-                      <th className="px-6 py-3.5">Status</th>
+                      <th className="px-6 py-3.5">{t.operations.supplierNameCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.trnCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.categoryCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.contactPhoneCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.paymentTermsCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.outstandingBalanceCol}</th>
+                      <th className="px-6 py-3.5">{t.operations.statusCol}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {suppliers.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-slate-400 text-sm">
-                          No suppliers recorded yet.
+                          {language === 'ar' ? 'لا يوجد موردون مسجلون بعد.' : 'No suppliers recorded yet.'}
                         </td>
                       </tr>
                     ) : (
@@ -588,7 +588,7 @@ export default function OperationsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-xs font-medium text-slate-900 dark:text-white">{s.contactPerson || 'Office'}</div>
+                            <div className="text-xs font-medium text-slate-900 dark:text-white">{s.contactPerson || (language === 'ar' ? 'المكتب' : 'Office')}</div>
                             <div className="text-xs text-slate-400 font-mono">{s.phone}</div>
                           </td>
                           <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300 font-medium">
@@ -622,15 +622,15 @@ export default function OperationsPage() {
                 <ArrowRightLeft className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Inter-Branch Transfer</h3>
-                <p className="text-xs text-slate-500">Atomic branch-to-branch inventory movement</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.operations.interBranchTransferTitle}</h3>
+                <p className="text-xs text-slate-500">{t.operations.interBranchTransferDesc}</p>
               </div>
             </div>
 
             <form onSubmit={handleInitiateTransfer} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Source Item (with Current Branch)
+                  {language === 'ar' ? 'العنصر المصدر (مع الفرع الحالي)' : 'Source Item (with Current Branch)'}
                 </label>
                 <select
                   value={transferData.itemId}
@@ -638,10 +638,10 @@ export default function OperationsPage() {
                   required
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="">Select Inventory Item</option>
+                  <option value="">{t.operations.selectInventoryItem}</option>
                   {inventory.map((it) => (
                     <option key={it.id} value={it.id}>
-                      {it.nameEn} ({it.branch?.nameEn}) &mdash; Available: {it.currentStock} {it.primaryUnit}
+                      {language === 'ar' ? it.nameAr : it.nameEn} ({it.branch?.nameEn}) &mdash; {language === 'ar' ? 'المتاح' : 'Available'}: {it.currentStock} {it.primaryUnit}
                     </option>
                   ))}
                 </select>
@@ -649,7 +649,7 @@ export default function OperationsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Destination Branch
+                  {language === 'ar' ? 'فرع الوجهة' : 'Destination Branch'}
                 </label>
                 <select
                   value={transferData.targetBranchId}
@@ -657,16 +657,16 @@ export default function OperationsPage() {
                   required
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="">Select Destination Branch</option>
-                  <option value="cmm_br_bateen">Al Bateen Waterfront (BR-01)</option>
-                  <option value="cmm_br_yas">Yas Mall Dining Hub (BR-02)</option>
-                  <option value="cmm_br_saadiyat">Saadiyat Cultural District (BR-03)</option>
+                  <option value="">{t.operations.selectDestinationBranch}</option>
+                  <option value="cmm_br_bateen">{language === 'ar' ? 'واجهة البطين البحرية (BR-01)' : 'Al Bateen Waterfront (BR-01)'}</option>
+                  <option value="cmm_br_yas">{language === 'ar' ? 'ياس مول داينينغ هاب (BR-02)' : 'Yas Mall Dining Hub (BR-02)'}</option>
+                  <option value="cmm_br_saadiyat">{language === 'ar' ? 'منطقة السعديات الثقافية (BR-03)' : 'Saadiyat Cultural District (BR-03)'}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Quantity to Transfer
+                  {language === 'ar' ? 'الكمية المراد نقلها' : 'Quantity to Transfer'}
                 </label>
                 <input
                   type="number"
@@ -681,13 +681,13 @@ export default function OperationsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Transfer Notes
+                  {language === 'ar' ? 'ملاحظات النقل' : 'Transfer Notes'}
                 </label>
                 <input
                   type="text"
                   value={transferData.notes}
                   onChange={(e) => setTransferData({ ...transferData, notes: e.target.value })}
-                  placeholder="Reason / Dispatch notes"
+                  placeholder={t.operations.dispatchNotesPlaceholder}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -698,13 +698,13 @@ export default function OperationsPage() {
                   onClick={() => setShowTransferModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
                 >
-                  Next: Enter Auth Password
+                  {t.security.nextEnterAuthPassword}
                 </button>
               </div>
             </form>
@@ -721,15 +721,15 @@ export default function OperationsPage() {
                 <Trash2 className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Record Waste / Spoilage</h3>
-                <p className="text-xs text-slate-500">Register inventory write-off</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.operations.recordWasteTitle}</h3>
+                <p className="text-xs text-slate-500">{t.operations.recordWasteDesc}</p>
               </div>
             </div>
 
             <form onSubmit={handleRecordWaste} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Item
+                  {language === 'ar' ? 'العنصر' : 'Item'}
                 </label>
                 <select
                   value={wasteData.inventoryItemId}
@@ -744,10 +744,10 @@ export default function OperationsPage() {
                   required
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
                 >
-                  <option value="">Select Inventory Item</option>
+                  <option value="">{t.operations.selectInventoryItem}</option>
                   {inventory.map((it) => (
                     <option key={it.id} value={it.id}>
-                      {it.nameEn} ({it.branch?.nameEn})
+                      {language === 'ar' ? it.nameAr : it.nameEn} ({it.branch?.nameEn})
                     </option>
                   ))}
                 </select>
@@ -755,23 +755,23 @@ export default function OperationsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Reason
+                  {language === 'ar' ? 'السبب' : 'Reason'}
                 </label>
                 <select
                   value={wasteData.reason}
                   onChange={(e) => setWasteData({ ...wasteData, reason: e.target.value })}
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
                 >
-                  <option value="EXPIRED">Expired / Passed Shelf Life</option>
-                  <option value="PREP_WASTE">Kitchen Preparation Waste</option>
-                  <option value="DAMAGED">Damaged / Broken Packaging</option>
-                  <option value="CUSTOMER_RETURN">Customer Return / Quality Fault</option>
+                  <option value="EXPIRED">{t.operations.reasonExpired}</option>
+                  <option value="PREP_WASTE">{t.operations.reasonPrep}</option>
+                  <option value="DAMAGED">{t.operations.reasonDamaged}</option>
+                  <option value="CUSTOMER_RETURN">{t.operations.reasonReturn}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  Quantity
+                  {t.operations.quantityCol}
                 </label>
                 <input
                   type="number"
@@ -790,13 +790,13 @@ export default function OperationsPage() {
                   onClick={() => setShowNewWasteModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm"
                 >
-                  Next: Enter Auth Password
+                  {t.security.nextEnterAuthPassword}
                 </button>
               </div>
             </form>

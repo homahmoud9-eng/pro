@@ -26,10 +26,10 @@ export function AuthorizationPasswordDialog({
   onCancel,
   onClose,
 }: AuthorizationPasswordDialogProps) {
-  const displayTitle = actionTitle || title || "Confirm Authorization Password";
+  const { t, dir } = useI18n();
+  const displayTitle = actionTitle || title || t.security.confirmAuthorization;
   const displayDescription = targetDescription || description;
   const handleClose = onCancel || onClose || (() => {});
-  const { t, dir } = useI18n();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export function AuthorizationPasswordDialog({
               <h3 className="text-base font-semibold text-white">
                 {t.auth.authPasswordRequired}
               </h3>
-              <p className="text-xs text-rose-300/80">Two-Level Security Enforcement</p>
+              <p className="text-xs text-rose-300/80">{t.auth.twoLevelSecurityTitle}</p>
             </div>
           </div>
           <button
@@ -83,11 +83,11 @@ export function AuthorizationPasswordDialog({
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
-            <div className="text-xs font-medium text-slate-400">Operation:</div>
+            <div className="text-xs font-medium text-slate-400">{t.security.operation}</div>
             <div className="text-sm font-semibold text-white">{displayTitle}</div>
             {displayDescription && (
               <div className="text-xs text-rose-400 font-mono mt-1">
-                Target: {displayDescription}
+                {t.security.target} {displayDescription}
               </div>
             )}
           </div>
@@ -137,7 +137,7 @@ export function AuthorizationPasswordDialog({
               {loading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Verifying...</span>
+                  <span>{t.security.verifying}</span>
                 </>
               ) : (
                 <>

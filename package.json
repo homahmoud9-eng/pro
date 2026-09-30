@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test": "tsx tests/security-and-business.test.ts && node tests/e2e-http.test.mjs",
+    "i18n:check": "node scripts/check-i18n.mjs",
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push"
   },

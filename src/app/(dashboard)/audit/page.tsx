@@ -40,7 +40,7 @@ interface AuditLogEntry {
 }
 
 export default function AuditPage() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -108,10 +108,10 @@ export default function AuditPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <Lock className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-            {t('nav.audit')}
+            {t.audit.title}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            HMAC-SHA256 cryptographically chained immutable ledger. No update or delete operations allowed at the application layer.
+            {t.audit.subtitle}
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function AuditPage() {
           ) : (
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
           )}
-          {verifying ? 'Recalculating Cryptographic Hashes...' : 'Verify HMAC Chain Integrity'}
+          {verifying ? t.audit.recalculating : t.audit.verifyChain}
         </button>
       </div>
 
@@ -146,11 +146,11 @@ export default function AuditPage() {
             <div className="space-y-1 text-xs">
               <div className="font-bold text-sm">
                 {verificationResult.valid 
-                  ? 'Cryptographic Audit Passed: 100% Chain Integrity Verified' 
-                  : 'Tampering Detected: Chain Broken!'}
+                  ? t.audit.auditPassed
+                  : t.audit.tamperingDetected}
               </div>
               <p>
-                Successfully audited sequence #1 through sequence #{verificationResult.totalRecords} using server-side HMAC secret. Zero sequence gaps, zero hash discrepancies.
+                {t.audit.auditSummary.replace('{total}', String(verificationResult.totalRecords))}
               </p>
               {verificationResult.headHash && (
                 <div className="font-mono text-[10px] opacity-80 pt-1">
@@ -167,14 +167,14 @@ export default function AuditPage() {
         {/* Filters */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3.5 rtl:left-auto rtl:right-3.5 top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchLogs()}
-              placeholder="Search by user, action, entity or hash..."
-              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              placeholder={t.audit.searchPlaceholder}
+              className="w-full pl-10 rtl:pl-4 rtl:pr-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
             />
           </div>
 
@@ -184,14 +184,14 @@ export default function AuditPage() {
               onChange={(e) => setActionFilter(e.target.value)}
               className="px-3 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
             >
-              <option value="">All Action Types</option>
-              <option value="LOGIN">LOGIN</option>
-              <option value="DOCUMENT_UPLOAD">DOCUMENT_UPLOAD</option>
-              <option value="DOCUMENT_REPLACE">DOCUMENT_REPLACE</option>
-              <option value="CREATE_EMPLOYEE">CREATE_EMPLOYEE</option>
-              <option value="INTER_BRANCH_TRANSFER">INTER_BRANCH_TRANSFER</option>
-              <option value="CREATE_EXPENSE">CREATE_EXPENSE</option>
-              <option value="ADVANCE_PROCEDURE_STEP">ADVANCE_PROCEDURE_STEP</option>
+              <option value="">{t.audit.allActionTypes}</option>
+              <option value="LOGIN">{language === 'ar' ? 'تسجيل الدخول' : 'LOGIN'}</option>
+              <option value="DOCUMENT_UPLOAD">{language === 'ar' ? 'رفع مستند' : 'DOCUMENT_UPLOAD'}</option>
+              <option value="DOCUMENT_REPLACE">{language === 'ar' ? 'تحديث مستند' : 'DOCUMENT_REPLACE'}</option>
+              <option value="CREATE_EMPLOYEE">{language === 'ar' ? 'إضافة موظف' : 'CREATE_EMPLOYEE'}</option>
+              <option value="INTER_BRANCH_TRANSFER">{language === 'ar' ? 'نقل مخزون بين الفروع' : 'INTER_BRANCH_TRANSFER'}</option>
+              <option value="CREATE_EXPENSE">{language === 'ar' ? 'تسجيل مصروف' : 'CREATE_EXPENSE'}</option>
+              <option value="ADVANCE_PROCEDURE_STEP">{language === 'ar' ? 'تقديم خطوة إجراء' : 'ADVANCE_PROCEDURE_STEP'}</option>
             </select>
           </div>
         </div>
@@ -200,27 +200,27 @@ export default function AuditPage() {
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-sm">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
-            <p>Streaming cryptographic ledger records...</p>
+            <p>{t.audit.streamingLedger}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left rtl:text-right text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3.5">Seq #</th>
-                  <th className="px-6 py-3.5">Action & Entity</th>
-                  <th className="px-6 py-3.5">Actor (Role)</th>
-                  <th className="px-6 py-3.5">Branch</th>
-                  <th className="px-6 py-3.5">Cryptographic Hash</th>
-                  <th className="px-6 py-3.5">Timestamp</th>
-                  <th className="px-6 py-3.5 text-right">Details</th>
+                  <th className="px-6 py-3.5">{t.audit.sequence}</th>
+                  <th className="px-6 py-3.5">{t.audit.actionAndEntity}</th>
+                  <th className="px-6 py-3.5">{t.audit.actorRole}</th>
+                  <th className="px-6 py-3.5">{t.audit.branchCol}</th>
+                  <th className="px-6 py-3.5">{t.audit.cryptoHashCol}</th>
+                  <th className="px-6 py-3.5">{t.audit.timestampCol}</th>
+                  <th className="px-6 py-3.5 text-right rtl:text-left">{t.audit.detailsCol}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {logs.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-slate-400 text-sm">
-                      No audit records found matching query.
+                      {t.audit.noRecordsFound}
                     </td>
                   </tr>
                 ) : (
@@ -249,7 +249,7 @@ export default function AuditPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400">
-                        {log.branchName || 'Consolidated Org'}
+                        {log.branchName || (language === 'ar' ? 'المؤسسة المجمعة' : 'Consolidated Org')}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-400">
@@ -258,14 +258,14 @@ export default function AuditPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-slate-500">
-                        {new Date(log.timestamp).toLocaleString('en-GB')}
+                        {new Date(log.timestamp).toLocaleString(language === 'ar' ? 'ar-AE' : 'en-GB')}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right rtl:text-left">
                         <button
                           onClick={() => setSelectedLog(log)}
                           className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
                         >
-                          View Diff
+                          {t.audit.viewDiff}
                         </button>
                       </td>
                     </tr>
@@ -284,10 +284,10 @@ export default function AuditPage() {
             <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  SEQUENCE #{selectedLog.sequenceNumber} &middot; {selectedLog.action}
+                  {t.audit.sequence} #{selectedLog.sequenceNumber} &middot; {selectedLog.action}
                 </span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                  Audit Snapshot & Cryptographic Proof
+                  {t.audit.auditSnapshot}
                 </h3>
               </div>
               <button
@@ -301,13 +301,13 @@ export default function AuditPage() {
             {/* Cryptographic Linkage Info */}
             <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 space-y-2 text-xs font-mono">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Current Record Hash (HMAC-SHA256)</span>
+                <span className="text-slate-400 block text-[10px] uppercase">{t.audit.currentRecordHash}</span>
                 <span className="text-emerald-600 dark:text-emerald-400 break-all select-all font-bold">
                   {selectedLog.recordHash}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Chained Previous Hash</span>
+                <span className="text-slate-400 block text-[10px] uppercase">{t.audit.chainedPreviousHash}</span>
                 <span className="text-slate-600 dark:text-slate-300 break-all select-all">
                   {selectedLog.previousHash}
                 </span>
@@ -317,11 +317,11 @@ export default function AuditPage() {
             {/* Meta details */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                <span className="text-slate-400 block text-[10px]">Actor</span>
+                <span className="text-slate-400 block text-[10px]">{t.audit.actor}</span>
                 <span className="font-semibold">{selectedLog.userFullName} ({selectedLog.userEmail})</span>
               </div>
               <div className="p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                <span className="text-slate-400 block text-[10px]">IP & Timestamp</span>
+                <span className="text-slate-400 block text-[10px]">{t.audit.ipAndTimestamp}</span>
                 <span className="font-mono">{selectedLog.ipAddress || '127.0.0.1'} &middot; {new Date(selectedLog.timestamp).toISOString()}</span>
               </div>
             </div>
@@ -329,17 +329,17 @@ export default function AuditPage() {
             {/* Diff details */}
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 block">
-                Canonical State Diff (Old vs New Values)
+                {t.audit.canonicalDiff}
               </span>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-rose-500">Prior State (Before)</span>
+                  <span className="text-[10px] font-bold uppercase text-rose-500">{t.audit.priorState}</span>
                   <pre className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300 overflow-x-auto max-h-48">
                     {JSON.stringify(selectedLog.oldValues || {}, null, 2)}
                   </pre>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase text-emerald-500">Mutated State (After)</span>
+                  <span className="text-[10px] font-bold uppercase text-emerald-500">{t.audit.mutatedState}</span>
                   <pre className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300 overflow-x-auto max-h-48">
                     {JSON.stringify(selectedLog.newValues || {}, null, 2)}
                   </pre>
@@ -352,7 +352,7 @@ export default function AuditPage() {
                 onClick={() => setSelectedLog(null)}
                 className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl"
               >
-                Close Audit Record
+                {t.audit.closeAuditRecord}
               </button>
             </div>
           </div>

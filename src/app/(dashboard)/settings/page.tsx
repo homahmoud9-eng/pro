@@ -33,12 +33,13 @@ interface UserAccount {
     branch: {
       id: string;
       nameEn: string;
+      nameAr?: string;
     };
   }>;
 }
 
 export default function SettingsPage() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,10 +124,10 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
             <SettingsIcon className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-            {t('nav.settings')}
+            {t.settings.title}
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            System governance, Two-Level security credentials, Role-Based Access Control, and branch scope definitions.
+            {t.settings.subtitle}
           </p>
         </div>
 
@@ -135,7 +136,7 @@ export default function SettingsPage() {
           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
         >
           <UserPlus className="h-4 w-4" />
-          Provision New User
+          {t.settings.provisionNewUser}
         </button>
       </div>
 
@@ -145,11 +146,9 @@ export default function SettingsPage() {
           <KeyRound className="h-5 w-5" />
         </div>
         <div className="space-y-1 text-xs">
-          <h4 className="font-bold text-sm text-white">Two-Level Security Credentials Model Enforced</h4>
+          <h4 className="font-bold text-sm text-white">{t.settings.twoLevelEnforced}</h4>
           <p className="text-slate-300">
-            Every administrative identity maintains two distinct cryptographically salted credentials:
-            <span className="font-semibold text-emerald-400"> (1) Login Password</span> for session ingress, and
-            <span className="font-semibold text-emerald-400"> (2) Level-2 Authorization Password</span> required for all database mutations and sensitive operations.
+            {t.settings.twoLevelDesc}
           </p>
         </div>
       </div>
@@ -159,26 +158,26 @@ export default function SettingsPage() {
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
             <Users className="h-4 w-4 text-emerald-500" />
-            System User Accounts & Scopes ({users.length})
+            {language === 'ar' ? `حسابات مستخدمي النظام ونطاقاتهم (${users.length})` : `System User Accounts & Scopes (${users.length})`}
           </h3>
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-sm">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
-            <p>Loading user directories...</p>
+            <p>{t.settings.loading}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left rtl:text-right text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
                 <tr>
-                  <th className="px-6 py-3.5">User Identity</th>
-                  <th className="px-6 py-3.5">Role</th>
-                  <th className="px-6 py-3.5">Branch Scope</th>
-                  <th className="px-6 py-3.5">Phone</th>
-                  <th className="px-6 py-3.5">Security Level</th>
-                  <th className="px-6 py-3.5">Account Status</th>
+                  <th className="px-6 py-3.5">{t.settings.userIdentity}</th>
+                  <th className="px-6 py-3.5">{t.settings.role}</th>
+                  <th className="px-6 py-3.5">{t.settings.branchScope}</th>
+                  <th className="px-6 py-3.5">{t.settings.phone}</th>
+                  <th className="px-6 py-3.5">{t.settings.securityLevel}</th>
+                  <th className="px-6 py-3.5">{t.settings.accountStatus}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -194,14 +193,14 @@ export default function SettingsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                        {u.role.name}
+                        {t.enums.roles[u.role.name as keyof typeof t.enums.roles] || u.role.name}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs font-medium text-slate-700 dark:text-slate-300">
                       {u.branchScopeType === 'ALL_BRANCHES' ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">Consolidated (All Branches)</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t.settings.consolidatedAll}</span>
                       ) : (
-                        <span>{u.branches.map(b => b.branch.nameEn).join(', ') || 'Selected Branch'}</span>
+                        <span>{u.branches.map(b => (language === 'ar' ? (b.branch.nameAr || b.branch.nameEn) : b.branch.nameEn)).join(', ') || t.settings.selectedBranch}</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-500">
@@ -210,17 +209,17 @@ export default function SettingsPage() {
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                         <Lock className="h-3 w-3" />
-                        Dual Password Protected
+                        {t.settings.dualPasswordProtected}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {u.isActive ? (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                          <CheckCircle className="h-4 w-4" /> Active
+                          <CheckCircle className="h-4 w-4" /> {t.settings.activeStatus}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600">
-                          <XCircle className="h-4 w-4" /> Deactivated
+                          <XCircle className="h-4 w-4" /> {t.settings.inactiveStatus}
                         </span>
                       )}
                     </td>
@@ -236,33 +235,33 @@ export default function SettingsPage() {
       {showUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Provision New System User</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t.settings.provisionNewUser}</h3>
             
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Full Name
+                    {t.settings.fullNameLabel}
                   </label>
                   <input
                     type="text"
                     value={userForm.fullName}
                     onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
                     required
-                    placeholder="e.g. Tariq Al Nuaimi"
+                    placeholder={t.settings.fullNamePlaceholder}
                     className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Corporate Email
+                    {t.settings.emailLabel}
                   </label>
                   <input
                     type="email"
                     value={userForm.email}
                     onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                     required
-                    placeholder="tariq@tasha.ae"
+                    placeholder={t.settings.emailPlaceholder}
                     className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                   />
                 </div>
@@ -271,7 +270,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    UAE Mobile Number
+                    {t.employees.mobile}
                   </label>
                   <input
                     type="text"
@@ -283,17 +282,17 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    Assigned Role
+                    {t.settings.roleLabel}
                   </label>
                   <select
                     value={userForm.roleName}
                     onChange={(e) => setUserForm({ ...userForm, roleName: e.target.value })}
                     className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
                   >
-                    <option value="BRANCH_MANAGER">Branch Manager</option>
-                    <option value="HR_MANAGER">HR Manager</option>
-                    <option value="FINANCE_MANAGER">Finance Manager</option>
-                    <option value="COMPLIANCE_OFFICER">Compliance Officer</option>
+                    <option value="BRANCH_MANAGER">{t.enums.roles.BRANCH_MANAGER}</option>
+                    <option value="HR_MANAGER">{t.enums.roles.HR_MANAGER}</option>
+                    <option value="FINANCE_MANAGER">{t.enums.roles.FINANCE_MANAGER}</option>
+                    <option value="COMPLIANCE_OFFICER">{t.enums.roles.COMPLIANCE_OFFICER}</option>
                   </select>
                 </div>
               </div>
@@ -301,33 +300,33 @@ export default function SettingsPage() {
               {/* Password Setup */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
-                  Mandatory Two-Level Password Initialization
+                  {language === 'ar' ? 'تهيئة كلمتي المرور الإلزامية' : 'Mandatory Two-Level Password Initialization'}
                 </span>
                 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    (1) Login Password
+                    {t.settings.loginPasswordLabel}
                   </label>
                   <input
                     type="password"
                     value={userForm.loginPassword}
                     onChange={(e) => setUserForm({ ...userForm, loginPassword: e.target.value })}
                     required
-                    placeholder="Min 8 chars with uppercase & symbol"
+                    placeholder={t.settings.loginPasswordPlaceholder}
                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                    (2) Level-2 Authorization Password
+                    {t.settings.authPasswordLabel}
                   </label>
                   <input
                     type="password"
                     value={userForm.authorizationPassword}
                     onChange={(e) => setUserForm({ ...userForm, authorizationPassword: e.target.value })}
                     required
-                    placeholder="Separate password for critical mutations"
+                    placeholder={t.settings.authPasswordPlaceholder}
                     className="w-full px-3.5 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl"
                   />
                 </div>
@@ -339,13 +338,13 @@ export default function SettingsPage() {
                   onClick={() => setShowUserModal(false)}
                   className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
                 >
-                  Next: Enter Auth Password
+                  {t.security.nextEnterAuthPassword}
                 </button>
               </div>
             </form>

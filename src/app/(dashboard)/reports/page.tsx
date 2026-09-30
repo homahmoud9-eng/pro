@@ -37,8 +37,8 @@ export default function ReportsPage() {
   const handleExportData = (reportType: string, reportTitle: string) => {
     setAuthDialog({
       open: true,
-      title: `Authorize Data Export: ${reportTitle}`,
-      description: 'Exporting confidential business records requires Level-2 Authorization Password and generates an immutable audit record.',
+      title: t.reports.authExportTitle.replace('{reportTitle}', reportTitle),
+      description: t.reports.authExportDesc,
       actionName: `EXPORT_${reportType}`,
       onSuccess: async (authPassword: string) => {
         setExporting(reportType);
@@ -64,7 +64,7 @@ export default function ReportsPage() {
           document.body.removeChild(a);
         } catch (err) {
           console.error('Export failed', err);
-          alert('Export failed');
+          alert(t.reports.exportFailed);
         } finally {
           setExporting(null);
         }
@@ -78,10 +78,10 @@ export default function ReportsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           <FileSpreadsheet className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
-          {t('nav.reports')}
+          {t.reports.title}
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Regulatory summaries, financial compliance records, and audited corporate data exports.
+          {t.reports.subtitle}
         </p>
       </div>
 
@@ -94,26 +94,26 @@ export default function ReportsPage() {
               <Users className="h-6 w-6" />
             </div>
             <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              MOHRE / SIF FORMAT
+              {t.reports.mohreSifFormat}
             </span>
           </div>
 
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              HR & Wages Protection System (WPS) Ledger
+              {t.reports.hrWpsTitle}
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Active workforce headcount, monthly salary breakdowns, basic allowances, and bank routing numbers for Central Bank of the UAE WPS filing.
+              {t.reports.hrWpsDesc}
             </p>
           </div>
 
           <button
-            onClick={() => handleExportData('HR_WPS', 'HR & WPS Payroll Ledger')}
+            onClick={() => handleExportData('HR_WPS', t.reports.hrWpsTitle)}
             disabled={exporting === 'HR_WPS'}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            {exporting === 'HR_WPS' ? 'Exporting...' : 'Export Audited Ledger (Auth Required)'}
+            {exporting === 'HR_WPS' ? t.reports.exporting : t.reports.exportAuditedLedger}
           </button>
         </div>
 
@@ -124,26 +124,26 @@ export default function ReportsPage() {
               <DollarSign className="h-6 w-6" />
             </div>
             <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              FTA FORM 201
+              {t.reports.ftaForm201}
             </span>
           </div>
 
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Federal Tax Authority (FTA) 5% VAT Report
+              {t.reports.vatReportTitle}
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Taxable supplies breakdown across Abu Dhabi branches, input VAT credits on commercial invoices, and net tax liability.
+              {t.reports.vatReportDesc}
             </p>
           </div>
 
           <button
-            onClick={() => handleExportData('FINANCE', 'FTA 5% VAT Report')}
+            onClick={() => handleExportData('FINANCE', t.reports.vatReportTitle)}
             disabled={exporting === 'FINANCE'}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            {exporting === 'FINANCE' ? 'Exporting...' : 'Export Audited Report (Auth Required)'}
+            {exporting === 'FINANCE' ? t.reports.exporting : t.reports.exportAuditedReport}
           </button>
         </div>
 
@@ -154,26 +154,26 @@ export default function ReportsPage() {
               <ShieldCheck className="h-6 w-6" />
             </div>
             <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              ADAFSA ARCHIVE
+              {t.reports.adafsaArchive}
             </span>
           </div>
 
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              ADAFSA Food Safety & Inspection History
+              {t.reports.adafsaDossierTitle}
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Inspection certificates, corrective action resolution logs, and EFST training validity reports across all restaurant kitchens.
+              {t.reports.adafsaDossierDesc}
             </p>
           </div>
 
           <button
-            onClick={() => handleExportData('COMPLIANCE', 'ADAFSA Inspection Dossier')}
+            onClick={() => handleExportData('COMPLIANCE', t.reports.adafsaDossierTitle)}
             disabled={exporting === 'COMPLIANCE'}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            {exporting === 'COMPLIANCE' ? 'Exporting...' : 'Export Audited Dossier (Auth Required)'}
+            {exporting === 'COMPLIANCE' ? t.reports.exporting : t.reports.exportAuditedDossier}
           </button>
         </div>
 
@@ -184,26 +184,26 @@ export default function ReportsPage() {
               <Package className="h-6 w-6" />
             </div>
             <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              ERP VALUATION
+              {t.reports.erpValuation}
             </span>
           </div>
 
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Inventory Asset Valuation & Food Cost Report
+              {t.reports.inventoryValuationTitle}
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Real-time stock valuation in AED, theoretical vs actual recipe consumption variances, and monthly spoilage register.
+              {t.reports.inventoryValuationDesc}
             </p>
           </div>
 
           <button
-            onClick={() => handleExportData('INVENTORY', 'Inventory & Food Cost Report')}
+            onClick={() => handleExportData('INVENTORY', t.reports.inventoryValuationTitle)}
             disabled={exporting === 'INVENTORY'}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl shadow-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-all disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            {exporting === 'INVENTORY' ? 'Exporting...' : 'Export Audited Report (Auth Required)'}
+            {exporting === 'INVENTORY' ? t.reports.exporting : t.reports.exportAuditedReport}
           </button>
         </div>
       </div>

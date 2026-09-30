@@ -14,7 +14,7 @@ import {
 
 export function Header() {
   const router = useRouter();
-  const { locale, setLocale, toggleLocale, t } = useI18n();
+  const { locale, setLocale, toggleLocale, t, tRole } = useI18n();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -57,9 +57,9 @@ export function Header() {
                 ? "bg-rose-600 text-white shadow-sm font-bold"
                 : "text-slate-400 hover:text-white"
             }`}
-            title="English (LTR)"
+            title={t.common.activeLangEn}
           >
-            <span>English (LTR)</span>
+            <span>{t.common.activeLangEn}</span>
           </button>
           <button
             onClick={() => setLocale("ar")}
@@ -68,9 +68,9 @@ export function Header() {
                 ? "bg-rose-600 text-white shadow-sm font-bold"
                 : "text-slate-400 hover:text-white"
             }`}
-            title="العربية (RTL)"
+            title={t.common.activeLangAr}
           >
-            <span>العربية (RTL)</span>
+            <span>{t.common.activeLangAr}</span>
           </button>
         </div>
 
@@ -89,7 +89,7 @@ export function Header() {
                   {currentUser.name}
                 </div>
                 <div className="text-[10px] text-rose-400 font-medium">
-                  {currentUser.roles?.[0] || "User"}
+                  {tRole(currentUser.roles?.[0]) || t.auth.userLabel}
                 </div>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -106,7 +106,7 @@ export function Header() {
                   </div>
                   <div className="mt-1 flex items-center space-x-1 rtl:space-x-reverse text-[10px] text-rose-400">
                     <Shield className="w-3 h-3" />
-                    <span>{t.common.role}: {currentUser.roles?.join(", ")}</span>
+                    <span>{t.common.role}: {currentUser.roles?.map((r: string) => tRole(r)).join(", ")}</span>
                   </div>
                 </div>
 
