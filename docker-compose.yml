@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: restaurant_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: restaurant_secure_password_2026
+      POSTGRES_DB: uae_restaurant_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - restaurant_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d uae_restaurant_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  restaurant_postgres_data:
