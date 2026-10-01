@@ -17,7 +17,9 @@ const PROTECTED_PREFIXES = [
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isProtected = PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
 
   if (isProtected) {
     const sessionCookie = req.cookies.get("uae_restaurant_session")?.value;
@@ -33,15 +35,25 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/employees",
     "/employees/:path*",
+    "/business",
     "/business/:path*",
+    "/operations",
     "/operations/:path*",
+    "/finance",
     "/finance/:path*",
+    "/compliance",
     "/compliance/:path*",
+    "/reports",
     "/reports/:path*",
+    "/notifications",
     "/notifications/:path*",
+    "/audit",
     "/audit/:path*",
+    "/settings",
     "/settings/:path*",
   ],
 };

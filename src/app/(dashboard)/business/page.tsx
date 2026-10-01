@@ -40,6 +40,7 @@ export default function BusinessPage() {
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Search and Filter State for Branches
   const [branchSearch, setBranchSearch] = useState("");
@@ -125,13 +126,22 @@ export default function BusinessPage() {
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/business");
+      if (res.status === 401) {
+        router.push("/login?redirect=/business");
+        return;
+      }
       const d = await res.json();
+      if (!res.ok || !d || !d.organization) {
+        throw new Error(d?.error || "Failed to load business data");
+      }
       setData(d);
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to load business data", "error");
+    } catch (err: any) {
+      console.error("Failed to load business data:", err);
+      setError(err?.message || "Failed to load business data");
+      showToast(err?.message || "Failed to load business data", "error");
     } finally {
       setLoading(false);
     }
@@ -403,11 +413,44 @@ export default function BusinessPage() {
     setAuthDialogOpen(true);
   };
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="py-24 text-center text-slate-500">
         <Loader2 className="w-9 h-9 animate-spin mx-auto mb-3 text-rose-500" />
         <span className="text-sm font-semibold">{t.business.loading}</span>
+      </div>
+    );
+  }
+
+  if (error || !data || !data.organization) {
+    return (
+      <div className="p-8 bg-[#141720] border border-rose-900/40 rounded-3xl text-center space-y-4 max-w-lg mx-auto my-12">
+        <div className="w-12 h-12 rounded-2xl bg-rose-950/60 border border-rose-800/40 text-rose-500 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-base font-bold text-white mb-1">
+            {locale === "ar" ? "تعذر تحميل بيانات المنشأة" : "Failed to Load Business Data"}
+          </h2>
+          <p className="text-xs text-rose-400 font-mono break-words">
+            {error || (locale === "ar" ? "البيانات غير متوفرة أو الجلسة غير مصرح بها" : "Business data not found or unauthorized session")}
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => router.push("/login?redirect=/business")}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold inline-flex items-center space-x-2 rtl:space-x-reverse transition"
+          >
+            <span>{locale === "ar" ? "تسجيل الدخول" : "Login"}</span>
+          </button>
+          <button
+            onClick={loadData}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold inline-flex items-center space-x-2 rtl:space-x-reverse transition shadow-lg shadow-rose-950/40"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>{locale === "ar" ? "إعادة المحاولة" : "Retry"}</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -465,27 +508,27 @@ export default function BusinessPage() {
           <div>
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                {locale === "ar" ? organization.nameAr || organization.nameEn : organization.nameEn}
+                {locale === "ar" ? organization?.nameAr || organization?.nameEn || "" : organization?.nameEn || organization?.nameAr || ""}
               </h1>
               <span className="text-[10px] font-mono bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-semibold">
-                {organization.code}
+                {organization?.code || ""}
               </span>
             </div>
             <p className="text-xs text-rose-400 font-semibold mt-0.5">
-              {locale === "ar" ? organization.nameEn : organization.nameAr}
+              {locale === "ar" ? organization?.nameEn || "" : organization?.nameAr || ""}
             </p>
 
             <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-400 mt-3">
               <span className="flex items-center space-x-1.5 rtl:space-x-reverse">
                 <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                <span>{organization.address}, {organization.emirate}</span>
+                <span>{organization?.address || ""}, {organization?.emirate || ""}</span>
               </span>
               <span className="flex items-center space-x-1.5 rtl:space-x-reverse">
                 <Phone className="w-3.5 h-3.5 text-rose-400" />
-                <span>{organization.phone}</span>
+                <span>{organization?.phone || ""}</span>
               </span>
               <span className="flex items-center space-x-1.5 rtl:space-x-reverse font-mono text-emerald-400">
-                <span>TRN: {organization.trn}</span>
+                <span>TRN: {organization?.trn || ""}</span>
               </span>
             </div>
           </div>
