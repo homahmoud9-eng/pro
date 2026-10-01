@@ -72,12 +72,17 @@ model Branch {
   code           String    // unique per org
   nameAr         String
   nameEn         String
+  type           String    @default("RESTAURANT") // RESTAURANT, WATERFRONT, PRODUCTION_KITCHEN, CENTRAL_KITCHEN, CATERING_KITCHEN, WAREHOUSE, OFFICE, OTHER
   address        String?
+  addressAr      String?
   phone          String?
+  email          String?
   managerName    String?
-  status         String    @default("ACTIVE") // ACTIVE, INACTIVE, UNDER_RENOVATION
+  status         String    @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED, UNDER_RENOVATION
   openingDate    DateTime?
+  closingDate    DateTime?
   openingHours   String?
+  notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

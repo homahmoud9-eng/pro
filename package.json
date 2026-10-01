@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx tests/security-and-business.test.ts && node tests/e2e-http.test.mjs && tsx tests/branch-document-center.test.ts",
+    "test": "tsx tests/security-and-business.test.ts && node tests/e2e-http.test.mjs && tsx tests/branch-document-center.test.ts && tsx tests/branch-management-crud.test.ts",
     "i18n:check": "node scripts/check-i18n.mjs",
     "db:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push"

@@ -91,12 +91,16 @@ async function main() {
       code: "BR-01",
       nameAr: "فرع البطين الرئيسي",
       nameEn: "Al Bateen Main Flagship",
+      type: "RESTAURANT",
       address: "Al Bateen Marina, Abu Dhabi",
+      addressAr: "مارينا البطين، أبوظبي",
       phone: "+971 2 642 9001",
+      email: "bateen@tasha.ae",
       managerName: "Mahmoud Al Nuaimi",
       status: "ACTIVE",
       openingDate: new Date("2024-01-15"),
       openingHours: "08:00 AM - 12:00 AM",
+      notes: "Flagship fine-dining venue licensed by ADDED and ADAFSA.",
     },
   });
 
@@ -108,12 +112,16 @@ async function main() {
       code: "BR-02",
       nameAr: "فرع ياس مول",
       nameEn: "Yas Mall Waterfront",
+      type: "WATERFRONT",
       address: "Yas Island, Ground Floor, Dining Boulevard",
+      addressAr: "جزيرة ياس، الطابق الأرضي، بوليفارد المطاعم",
       phone: "+971 2 642 9002",
+      email: "yasmall@tasha.ae",
       managerName: "Karim Hassan",
       status: "ACTIVE",
       openingDate: new Date("2025-03-01"),
       openingHours: "10:00 AM - 01:00 AM",
+      notes: "Waterfront branch on Yas Island.",
     },
   });
 
@@ -125,12 +133,16 @@ async function main() {
       code: "BR-03",
       nameAr: "مطبخ المصفح المركزي للتجهيز",
       nameEn: "Musaffah Central Production Kitchen",
+      type: "CENTRAL_KITCHEN",
       address: "Musaffah Industrial M-14, Warehouse 12",
+      addressAr: "مصفح الصناعية م-14، مستودع 12",
       phone: "+971 2 642 9003",
+      email: "central.kitchen@tasha.ae",
       managerName: "Chef Andrea Rossi",
       status: "ACTIVE",
       openingDate: new Date("2024-06-01"),
       openingHours: "24/7 Operations",
+      notes: "Central production and prep kitchen supplying all outlets.",
     },
   });
 
@@ -208,6 +220,13 @@ async function main() {
     { code: "user.create", module: "security", description: "Create users and assign credentials" },
     { code: "settings.read", module: "settings", description: "View system configuration" },
     { code: "settings.update", module: "settings", description: "Update policies and document types" },
+    { code: "CREATE_BRANCH", module: "business", description: "Create restaurant branches" },
+    { code: "EDIT_BRANCH", module: "business", description: "Edit branch details" },
+    { code: "ARCHIVE_BRANCH", module: "business", description: "Archive or deactivate restaurant branches" },
+    { code: "REACTIVATE_BRANCH", module: "business", description: "Reactivate archived branches" },
+    { code: "branch.create", module: "business", description: "Create restaurant branches (alias)" },
+    { code: "branch.update", module: "business", description: "Edit branch details (alias)" },
+    { code: "branch.archive", module: "business", description: "Archive branches (alias)" },
   ];
 
   const permMap: Record<string, string> = {};

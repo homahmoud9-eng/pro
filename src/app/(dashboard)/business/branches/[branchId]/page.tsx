@@ -78,12 +78,17 @@ interface BranchData {
   code: string;
   nameEn: string;
   nameAr: string;
+  type?: string;
   address: string | null;
+  addressAr?: string | null;
   phone: string | null;
+  email?: string | null;
   managerName: string | null;
   status: string;
   openingDate: string | null;
+  closingDate?: string | null;
   openingHours: string | null;
+  notes?: string | null;
   organization: {
     id: string;
     nameEn: string;
@@ -164,13 +169,20 @@ export default function BranchDetailPage({
   // Edit Branch Modal
   const [editBranchModalOpen, setEditBranchModalOpen] = useState(false);
   const [editBranchForm, setEditBranchForm] = useState({
+    code: "",
     nameEn: "",
     nameAr: "",
+    type: "RESTAURANT",
     phone: "",
+    email: "",
     address: "",
+    addressAr: "",
     managerName: "",
     status: "ACTIVE",
+    openingDate: "",
+    closingDate: "",
     openingHours: "",
+    notes: "",
   });
 
   // Global Level-2 Authorization Password Dialog
@@ -210,13 +222,20 @@ export default function BranchDetailPage({
 
       if (data.branch) {
         setEditBranchForm({
+          code: data.branch.code || "",
           nameEn: data.branch.nameEn || "",
           nameAr: data.branch.nameAr || "",
+          type: data.branch.type || "RESTAURANT",
           phone: data.branch.phone || "",
+          email: data.branch.email || "",
           address: data.branch.address || "",
+          addressAr: data.branch.addressAr || "",
           managerName: data.branch.managerName || "",
           status: data.branch.status || "ACTIVE",
+          openingDate: data.branch.openingDate ? new Date(data.branch.openingDate).toISOString().split("T")[0] : "",
+          closingDate: data.branch.closingDate ? new Date(data.branch.closingDate).toISOString().split("T")[0] : "",
           openingHours: data.branch.openingHours || "",
+          notes: data.branch.notes || "",
         });
       }
     } catch (err: any) {
@@ -230,7 +249,7 @@ export default function BranchDetailPage({
     fetchBranchData();
   }, [branchId]);
 
-  // Handle Document Upload
+  // Handle Document Upload with Level-2 Authorization Password
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadError(null);
@@ -253,54 +272,63 @@ export default function BranchDetailPage({
       return;
     }
 
-    try {
-      setUploading(true);
-      const fd = new FormData();
-      fd.append("file", uploadFile);
-      fd.append("title", uploadForm.title.trim());
-      fd.append("documentTypeId", uploadForm.documentTypeId);
-      fd.append("entityType", "BRANCH");
-      fd.append("entityId", branchId);
-      fd.append("branchId", branchId);
-      if (uploadForm.referenceNumber.trim()) {
-        fd.append("referenceNumber", uploadForm.referenceNumber.trim());
-      }
-      if (uploadForm.issueDate) {
-        fd.append("issueDate", uploadForm.issueDate);
-      }
-      if (uploadForm.expiryDate) {
-        fd.append("expiryDate", uploadForm.expiryDate);
-      }
-      if (uploadForm.notes.trim()) {
-        fd.append("notes", uploadForm.notes.trim());
-      }
+    setAuthDialog({
+      open: true,
+      title: t.branchDocs.uploadModalTitle,
+      description: `${uploadForm.title.trim()} (${branch?.code})`,
+      actionName: "UPLOAD_DOCUMENT",
+      onSuccess: async (authorizationPassword: string) => {
+        try {
+          setUploading(true);
+          const fd = new FormData();
+          fd.append("file", uploadFile);
+          fd.append("title", uploadForm.title.trim());
+          fd.append("documentTypeId", uploadForm.documentTypeId);
+          fd.append("entityType", "BRANCH");
+          fd.append("entityId", branchId);
+          fd.append("branchId", branchId);
+          if (uploadForm.referenceNumber.trim()) {
+            fd.append("referenceNumber", uploadForm.referenceNumber.trim());
+          }
+          if (uploadForm.issueDate) {
+            fd.append("issueDate", uploadForm.issueDate);
+          }
+          if (uploadForm.expiryDate) {
+            fd.append("expiryDate", uploadForm.expiryDate);
+          }
+          if (uploadForm.notes.trim()) {
+            fd.append("notes", uploadForm.notes.trim());
+          }
+          fd.append("authorizationPassword", authorizationPassword);
 
-      const res = await fetch("/api/documents", {
-        method: "POST",
-        body: fd,
-      });
+          const res = await fetch("/api/documents", {
+            method: "POST",
+            body: fd,
+          });
 
-      const resJson = await res.json();
-      if (!res.ok) {
-        throw new Error(resJson.error || "Failed to upload document");
-      }
+          const resJson = await res.json();
+          if (!res.ok) {
+            throw new Error(resJson.error || "Failed to upload document");
+          }
 
-      setUploadModalOpen(false);
-      setUploadFile(null);
-      setUploadForm({
-        documentTypeId: "",
-        title: "",
-        referenceNumber: "",
-        issueDate: "",
-        expiryDate: "",
-        notes: "",
-      });
-      await fetchBranchData();
-    } catch (err: any) {
-      setUploadError(err.message || "Upload failed");
-    } finally {
-      setUploading(false);
-    }
+          setUploadModalOpen(false);
+          setUploadFile(null);
+          setUploadForm({
+            documentTypeId: "",
+            title: "",
+            referenceNumber: "",
+            issueDate: "",
+            expiryDate: "",
+            notes: "",
+          });
+          await fetchBranchData();
+        } catch (err: any) {
+          setUploadError(err.message || "Upload failed");
+        } finally {
+          setUploading(false);
+        }
+      },
+    });
   };
 
   // Trigger Document Replace with Authorization Password
@@ -510,18 +538,32 @@ export default function BranchDetailPage({
           <span className="text-slate-200 font-semibold">{branch.nameEn}</span>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#141720] border border-[#1e2433] rounded-3xl p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#141720] border border-[#1e2433] rounded-3xl p-6 shadow-xl">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs font-mono px-2.5 py-0.5 rounded-md bg-rose-950/40 border border-rose-800/40 text-rose-400 font-bold">
                 {branch.code}
               </span>
-              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-800/40">
-                {branch.status === "ACTIVE" ? t.branchDocs.activeStatus : t.branchDocs.inactiveStatus}
+              <span
+                className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${
+                  branch.status === "ACTIVE"
+                    ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
+                    : branch.status === "ARCHIVED"
+                    ? "bg-purple-950/50 text-purple-300 border-purple-800/50"
+                    : "bg-slate-900 text-slate-400 border-slate-800"
+                }`}
+              >
+                {branch.status === "ACTIVE"
+                  ? t.branchDocs.activeStatus
+                  : branch.status === "ARCHIVED"
+                  ? (locale === "ar" ? "مؤرشف" : "Archived")
+                  : t.branchDocs.inactiveStatus}
               </span>
-              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
-                {t.branchDocs.directOperating}
-              </span>
+              {branch.type && (
+                <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800">
+                  {branch.type}
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
@@ -536,12 +578,17 @@ export default function BranchDetailPage({
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                <span>{branch.address || "N/A"}</span>
+                <span>{locale === "ar" ? branch.addressAr || branch.address || "N/A" : branch.address || "N/A"}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-slate-500" />
                 <span dir="ltr">{branch.phone || "N/A"}</span>
               </div>
+              {branch.email && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400">{branch.email}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5">
                 <UserCheck className="w-3.5 h-3.5 text-slate-500" />
                 <span>
@@ -560,20 +607,29 @@ export default function BranchDetailPage({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/business/branches/${branch.id}/documents`}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-blue-950/40 hover:bg-blue-900/60 text-blue-300 border border-blue-800/40 flex items-center gap-1.5 transition"
+            >
+              <FolderLock className="w-3.5 h-3.5 text-blue-400" />
+              <span>{locale === "ar" ? "مستندات الفرع" : "Branch Documents"}</span>
+            </Link>
+
             <button
               onClick={() => setEditBranchModalOpen(true)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 border border-slate-700 transition shadow-sm"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 border border-slate-700 transition shadow-sm"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>{t.branchDocs.editBranch}</span>
             </button>
+
             <button
               onClick={() => {
                 setUploadError(null);
                 setUploadModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 shadow-sm transition"
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-sm transition"
             >
               <Plus className="w-4 h-4" />
               <span>{t.branchDocs.uploadDocument}</span>

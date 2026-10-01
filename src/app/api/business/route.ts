@@ -56,6 +56,16 @@ export async function GET() {
       branches,
       departments,
       legalDocs,
+      currentUser: {
+        id: actor.id,
+        name: actor.name,
+        roles: actor.roles,
+        permissions: actor.permissions,
+        isOwner: actor.roles.includes("Owner"),
+        canCreateBranch: actor.roles.includes("Owner") || actor.permissions.includes("CREATE_BRANCH") || actor.permissions.includes("branch.create") || actor.permissions.includes("business.update"),
+        canEditBranch: actor.roles.includes("Owner") || actor.permissions.includes("EDIT_BRANCH") || actor.permissions.includes("branch.update") || actor.permissions.includes("business.update"),
+        canArchiveBranch: actor.roles.includes("Owner") || actor.permissions.includes("ARCHIVE_BRANCH") || actor.permissions.includes("branch.archive") || actor.permissions.includes("business.update"),
+      },
     });
   }
 

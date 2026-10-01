@@ -26,7 +26,10 @@ export interface MutationContext {
   actor: AuthenticatedActor;
   organizationId: string;
   branchId?: string | null;
-  audit: (successChangesAfter?: any) => Promise<any>;
+  audit: (
+    successChangesAfter?: any,
+    overrideParams?: { entityId?: string; branchId?: string; entityDisplayName?: string }
+  ) => Promise<any>;
 }
 
 export class SecurityError extends Error {
@@ -58,7 +61,14 @@ export async function authorizeMutation(
   // 3. Permission Check (Owner role bypasses individual permission check)
   const isOwner = actor.roles.includes("Owner");
   if (!isOwner && permission) {
-    const hasPerm = actor.permissions.includes(permission);
+    const permAliases: Record<string, string[]> = {
+      CREATE_BRANCH: ["CREATE_BRANCH", "branch.create", "business.update"],
+      EDIT_BRANCH: ["EDIT_BRANCH", "branch.update", "business.update"],
+      ARCHIVE_BRANCH: ["ARCHIVE_BRANCH", "branch.archive", "business.update"],
+      REACTIVATE_BRANCH: ["REACTIVATE_BRANCH", "ARCHIVE_BRANCH", "EDIT_BRANCH", "branch.reactivate", "business.update"],
+    };
+    const allowedCodes = permAliases[permission] || [permission];
+    const hasPerm = allowedCodes.some((code) => actor.permissions.includes(code));
     if (!hasPerm) {
       await prisma.securityEvent.create({
         data: {
@@ -132,18 +142,21 @@ export async function authorizeMutation(
   }
 
   // Helper function to write the immutable audit log upon successful completion of the mutation
-  const audit = async (successChangesAfter?: any) => {
+  const audit = async (
+    successChangesAfter?: any,
+    overrideParams?: { entityId?: string; branchId?: string; entityDisplayName?: string }
+  ) => {
     return writeAuditLog({
       organizationId: actor.organizationId,
-      branchId: targetBranchId || null,
+      branchId: overrideParams?.branchId || targetBranchId || (options.entityType === "BRANCH" ? (overrideParams?.entityId || options.entityId) : null) || null,
       actorUserId: actor.id,
       actorNameSnapshot: actor.name,
       actorEmailSnapshot: actor.email,
       action: options.action,
       module: options.module,
       entityType: options.entityType,
-      entityId: options.entityId,
-      entityDisplayName: options.entityDisplayName,
+      entityId: overrideParams?.entityId || options.entityId,
+      entityDisplayName: overrideParams?.entityDisplayName || options.entityDisplayName,
       requestId: options.requestId,
       ipAddress: options.ipAddress,
       userAgent: options.userAgent,
