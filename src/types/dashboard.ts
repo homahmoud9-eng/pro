@@ -16,6 +16,13 @@ export interface DashboardMetrics {
   foodCostPercent: number;
   openFindings: number;
   currency: string;
+  employeeDocStats?: {
+    valid: number;
+    expiring90: number;
+    expiring30: number;
+    expired: number;
+    missing: number;
+  };
 }
 
 export interface RecentAuditEntry {
@@ -52,4 +59,11 @@ export const DEFAULT_DASHBOARD_METRICS: DashboardMetrics = {
   foodCostPercent: 0,
   openFindings: 0,
   currency: "AED",
+  employeeDocStats: {
+    valid: 0,
+    expiring90: 0,
+    expiring30: 0,
+    expired: 0,
+    missing: 0,
+  },
 };

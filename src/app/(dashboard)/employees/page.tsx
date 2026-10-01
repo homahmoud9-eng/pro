@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/context";
 import { AuthorizationPasswordDialog } from "@/components/security/authorization-password-dialog";
 import { PdfViewerModal } from "@/components/pdf/pdf-viewer-modal";
@@ -23,9 +25,15 @@ import {
   ShieldCheck,
   Calendar,
   CheckCircle2,
+  User,
+  Upload,
+  Trash2,
+  ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const { t, locale, dir } = useI18n();
 
   const [employees, setEmployees] = useState<any[]>([]);
@@ -44,6 +52,9 @@ export default function EmployeesPage() {
 
   // Add Employee Modal
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [newEmp, setNewEmp] = useState({
     nameEn: "",
     nameAr: "",
@@ -116,8 +127,35 @@ export default function EmployeesPage() {
     loadEmployees();
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      alert(locale === "ar" ? "يرجى اختيار صورة بصيغة JPG أو PNG أو WEBP" : "Please select a JPG, PNG, or WEBP image");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert(locale === "ar" ? "حجم الصورة يجب ألا يتجاوز 5 ميجابايت" : "Image size must not exceed 5MB");
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
   // Trigger Add Employee
   const handleOpenAdd = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
     setNewEmp({
       nameEn: "",
       nameAr: "",
@@ -142,16 +180,35 @@ export default function EmployeesPage() {
     setActionTitle(locale === "ar" ? "إنشاء سجل موظف جديد" : "Create New Employee");
     setTargetDescription(`${newEmp.nameEn} (${newEmp.nameAr}) - ${newEmp.jobTitle}`);
     setPendingAction(() => async (authPassword: string) => {
+      let photoUrl = "";
+      if (photoFile) {
+        setPhotoUploading(true);
+        const fd = new FormData();
+        fd.append("photo", photoFile);
+        const uploadRes = await fetch("/api/employees/upload-photo", {
+          method: "POST",
+          body: fd,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          setPhotoUploading(false);
+          throw new Error(uploadData.error || "Failed to upload employee photo");
+        }
+        photoUrl = uploadData.url;
+        setPhotoUploading(false);
+      }
+
       const res = await fetch("/api/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newEmp, authorizationPassword: authPassword }),
+        body: JSON.stringify({ ...newEmp, photoUrl, authorizationPassword: authPassword }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create employee");
       setAddModalOpen(false);
       setAuthDialogOpen(false);
-      await loadEmployees();
+      // Requirement 2: Open Employee Profile / Details Page immediately after creation
+      router.push(`/employees/${data.employee.id}`);
     });
     setAuthDialogOpen(true);
   };
@@ -404,11 +461,11 @@ export default function EmployeesPage() {
             return (
               <div
                 key={emp.id}
-                className="bg-[#141720] border border-[#1e2433] rounded-3xl p-5 shadow-xl flex flex-col justify-between enterprise-card group"
+                className="bg-[#141720] border border-[#1e2433] hover:border-rose-900/40 rounded-3xl p-5 shadow-xl flex flex-col justify-between enterprise-card group transition-all"
               >
                 <div>
                   {/* REAL PROFILE PHOTO CONTAINER */}
-                  <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-[#0c0e12] border border-[#1e2433] group-hover:border-rose-500/30 shadow-md">
+                  <Link href={`/employees/${emp.id}`} className="block relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-4 bg-[#0c0e12] border border-[#1e2433] group-hover:border-rose-500/40 shadow-md">
                     {/* Floating Status Pill */}
                     <div className="absolute top-3 end-3 z-10">
                       <span
@@ -444,13 +501,15 @@ export default function EmployeesPage() {
                         </span>
                       </div>
                     )}
-                  </div>
+                  </Link>
 
                   {/* Employee Names */}
                   <div className="space-y-0.5 mb-3">
-                    <h2 className="text-base font-bold text-white group-hover:text-rose-400 transition-colors truncate">
-                      {emp.nameEn}
-                    </h2>
+                    <Link href={`/employees/${emp.id}`}>
+                      <h2 className="text-base font-bold text-white group-hover:text-rose-400 transition-colors truncate">
+                        {emp.nameEn}
+                      </h2>
+                    </Link>
                     {emp.nameAr && (
                       <div className="text-xs text-slate-400 font-medium truncate">
                         {emp.nameAr}
@@ -512,26 +571,93 @@ export default function EmployeesPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Document Compliance Status & Nearest Expiry */}
+                  <div className="pt-3 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 flex items-center gap-1 font-medium">
+                        <FileText className="w-3 h-3 text-rose-400" />
+                        <span>{locale === "ar" ? "المستندات" : "Documents"}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {emp.docMetrics?.total || 0} {locale === "ar" ? "مستند" : "docs"}
+                      </span>
+                    </div>
+
+                    {/* Status pills */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {emp.docMetrics?.expired > 0 && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-950/80 text-rose-400 border border-rose-800/40">
+                          🔴 {emp.docMetrics.expired} {locale === "ar" ? "منتهي" : "expired"}
+                        </span>
+                      )}
+                      {emp.docMetrics?.expiring > 0 && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-800/40">
+                          🟡 {emp.docMetrics.expiring} {locale === "ar" ? "قريب الانتهاء" : "expiring"}
+                        </span>
+                      )}
+                      {emp.docMetrics?.active > 0 && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">
+                          🟢 {emp.docMetrics.active} {locale === "ar" ? "ساري" : "valid"}
+                        </span>
+                      )}
+                      {(!emp.docMetrics || emp.docMetrics.total === 0) && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-900 text-slate-500 border border-slate-800">
+                          ⚪ {locale === "ar" ? "لا توجد مستندات" : "No documents"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Nearest Expiry Badge */}
+                    {emp.docMetrics?.nearestExpiry && (
+                      <div className="text-[10px] flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0c0e12] border border-[#1e2433]">
+                        <Calendar className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                        <span className="text-slate-400 truncate">
+                          {locale === "ar"
+                            ? emp.docMetrics.nearestExpiry.documentType?.nameAr || emp.docMetrics.nearestExpiry.title
+                            : emp.docMetrics.nearestExpiry.documentType?.nameEn || emp.docMetrics.nearestExpiry.title}:
+                        </span>
+                        <span className={`font-mono font-bold flex-shrink-0 ${
+                          emp.docMetrics.nearestExpiry.daysRemaining < 0
+                            ? "text-rose-400"
+                            : emp.docMetrics.nearestExpiry.daysRemaining <= 30
+                            ? "text-amber-400"
+                            : "text-emerald-400"
+                        }`}>
+                          {emp.docMetrics.nearestExpiry.daysRemaining < 0
+                            ? (locale === "ar" ? `منتهي (${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}ي)` : `Expired (${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}d)`)
+                            : (locale === "ar" ? `${emp.docMetrics.nearestExpiry.daysRemaining} يوم` : `${emp.docMetrics.nearestExpiry.daysRemaining}d`)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Quick Actions Footer */}
-                <div className="pt-4 flex items-center space-x-2.5 rtl:space-x-reverse">
+                <div className="pt-4 flex items-center space-x-2 rtl:space-x-reverse">
+                  <Link
+                    href={`/employees/${emp.id}`}
+                    className="flex-1 py-2 px-2.5 bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/30 hover:border-rose-500 text-rose-300 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 rtl:space-x-reverse transition"
+                    title={locale === "ar" ? "الملف الكامل" : "Full Profile"}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-rose-400" />
+                    <span>{locale === "ar" ? "الملف" : "Profile"}</span>
+                  </Link>
+
                   <button
                     onClick={() => handleOpenDetail(emp)}
-                    className="flex-1 py-2 px-3 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] hover:border-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 rtl:space-x-reverse transition"
+                    className="py-2 px-2.5 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] hover:border-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 rtl:space-x-reverse transition"
                     title={t.employees.view}
                   >
-                    <Eye className="w-3.5 h-3.5 text-rose-400" />
-                    <span>{t.employees.view}</span>
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
                   </button>
 
                   <button
                     onClick={() => handleOpenEdit(emp)}
-                    className="flex-1 py-2 px-3 bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/30 hover:border-rose-500 text-rose-300 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1.5 rtl:space-x-reverse transition"
+                    className="py-2 px-2.5 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] hover:border-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center space-x-1 rtl:space-x-reverse transition"
                     title={t.employees.edit}
                   >
-                    <Edit2 className="w-3.5 h-3.5 text-rose-400" />
-                    <span>{t.employees.edit}</span>
+                    <Edit2 className="w-3.5 h-3.5 text-slate-400" />
                   </button>
                 </div>
               </div>
@@ -552,29 +678,23 @@ export default function EmployeesPage() {
                   <th className="px-5 py-3.5 text-start font-semibold">{t.employees.name}</th>
                   <th className="px-5 py-3.5 text-start font-semibold">{t.employees.jobTitle}</th>
                   <th className="px-5 py-3.5 text-start font-semibold">{t.employees.branch}</th>
-                  <th className="px-5 py-3.5 text-start font-semibold">{t.employees.salary}</th>
                   <th className="px-5 py-3.5 text-start font-semibold">{t.employees.status}</th>
+                  <th className="px-5 py-3.5 text-start font-semibold">{locale === "ar" ? "المستندات" : "Documents"}</th>
+                  <th className="px-5 py-3.5 text-start font-semibold">{locale === "ar" ? "أقرب انتهاء" : "Nearest Expiry"}</th>
                   <th className="px-5 py-3.5 text-end font-semibold">{t.common.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e2433]">
                 {employees.map((emp) => {
-                  const basic = emp.basicSalary !== null ? Number(emp.basicSalary) : null;
-                  const total =
-                    basic !== null
-                      ? basic +
-                        Number(emp.housingAllowance || 0) +
-                        Number(emp.transportAllowance || 0) +
-                        Number(emp.otherAllowances || 0)
-                      : null;
-
                   return (
                     <tr key={emp.id} className="hover:bg-slate-800/30 transition">
                       <td className="px-5 py-3.5 font-mono text-rose-400 font-semibold">
-                        {emp.employeeCode}
+                        <Link href={`/employees/${emp.id}`} className="hover:underline">
+                          {emp.employeeCode}
+                        </Link>
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#0c0e12] border border-[#1e2433]">
+                        <Link href={`/employees/${emp.id}`} className="block w-10 h-10 rounded-xl overflow-hidden bg-[#0c0e12] border border-[#1e2433] hover:border-rose-500/50">
                           {emp.photoUrl ? (
                             <img
                               src={emp.photoUrl}
@@ -586,11 +706,13 @@ export default function EmployeesPage() {
                               {emp.nameEn?.slice(0, 1)}
                             </div>
                           )}
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="font-semibold text-white">{emp.nameEn}</div>
-                        <div className="text-[11px] text-slate-400">{emp.nameAr}</div>
+                        <Link href={`/employees/${emp.id}`} className="hover:text-rose-400 transition-colors">
+                          <div className="font-semibold text-white">{emp.nameEn}</div>
+                          {emp.nameAr && <div className="text-[11px] text-slate-400">{emp.nameAr}</div>}
+                        </Link>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="text-slate-200">{emp.jobTitle}</div>
@@ -606,20 +728,6 @@ export default function EmployeesPage() {
                           : emp.branch?.nameEn || "Global"}
                       </td>
                       <td className="px-5 py-3.5">
-                        {total !== null ? (
-                          <div>
-                            <span className="font-semibold text-white font-mono">
-                              {total.toLocaleString()} {t.common.currency}
-                            </span>
-                            <span className="block text-[10px] text-slate-500">
-                              {t.employees.basicSalary}: {basic?.toLocaleString()}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-600 font-mono">{t.employees.confidential}</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3.5">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border ${getStatusStyle(
                             emp.status
@@ -628,8 +736,52 @@ export default function EmployeesPage() {
                           {getStatusLabel(emp.status)}
                         </span>
                       </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-wrap items-center gap-1">
+                          {emp.docMetrics?.expired > 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-950/80 text-rose-400 border border-rose-800/40">
+                              🔴 {emp.docMetrics.expired}
+                            </span>
+                          )}
+                          {emp.docMetrics?.expiring > 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-800/40">
+                              🟡 {emp.docMetrics.expiring}
+                            </span>
+                          )}
+                          {emp.docMetrics?.active > 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">
+                              🟢 {emp.docMetrics.active}
+                            </span>
+                          )}
+                          {(!emp.docMetrics || emp.docMetrics.total === 0) && (
+                            <span className="text-[10px] text-slate-500">
+                              ⚪ 0
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {emp.docMetrics?.nearestExpiry ? (
+                          <div className="text-[11px] font-mono">
+                            <span className={emp.docMetrics.nearestExpiry.daysRemaining < 0 ? "text-rose-400 font-bold" : emp.docMetrics.nearestExpiry.daysRemaining <= 30 ? "text-amber-400 font-bold" : "text-emerald-400"}>
+                              {emp.docMetrics.nearestExpiry.daysRemaining < 0
+                                ? (locale === "ar" ? `منتهي (${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}ي)` : `Expired (${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}d)`)
+                                : (locale === "ar" ? `${emp.docMetrics.nearestExpiry.daysRemaining} يوم` : `${emp.docMetrics.nearestExpiry.daysRemaining}d`)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-600 text-[11px]">-</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3.5 text-end">
-                        <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
+                        <div className="flex items-center justify-end space-x-1.5 rtl:space-x-reverse">
+                          <Link
+                            href={`/employees/${emp.id}`}
+                            className="p-1.5 hover:text-rose-400 text-slate-400 bg-[#0c0e12] border border-[#1e2433] rounded-lg hover:bg-slate-800 transition"
+                            title={locale === "ar" ? "الملف الكامل" : "Full Profile"}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
                           <button
                             onClick={() => handleOpenDetail(emp)}
                             className="p-1.5 hover:text-white text-slate-400 bg-[#0c0e12] border border-[#1e2433] rounded-lg hover:bg-slate-800 transition"
@@ -673,6 +825,47 @@ export default function EmployeesPage() {
             </div>
 
             <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+              {/* Employee Avatar Upload Section */}
+              <div className="p-4 bg-[#0c0e12] border border-[#1e2433] rounded-2xl flex flex-col sm:flex-row items-center gap-4">
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden bg-[#161a24] border-2 border-rose-500/40 flex items-center justify-center flex-shrink-0 shadow-lg">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-9 h-9 text-slate-500" />
+                  )}
+                </div>
+                <div className="flex-1 text-center sm:text-start">
+                  <div className="text-xs font-semibold text-white mb-1">
+                    {locale === "ar" ? "صورة الموظف / Avatar" : "Employee Photo / Avatar"}
+                  </div>
+                  <p className="text-[11px] text-slate-400 mb-2.5">
+                    {locale === "ar" ? "JPG أو PNG أو WEBP (الحد الأقصى 5 ميجابايت)" : "JPG, PNG, or WEBP (Max 5MB)"}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <label className="cursor-pointer px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{photoPreview ? (locale === "ar" ? "تغيير الصورة" : "Change Photo") : (locale === "ar" ? "رفع صورة الموظف" : "Upload Photo")}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handlePhotoSelect}
+                      />
+                    </label>
+                    {photoPreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                        <span>{locale === "ar" ? "حذف الصورة" : "Remove"}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">

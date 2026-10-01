@@ -77,6 +77,40 @@ export async function GET() {
           )
         : 0;
 
+    // Compute Employee Documents breakdown
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    const employeeDocs = await prisma.document.findMany({
+      where: {
+        organizationId: orgId,
+        OR: [{ entityType: "EMPLOYEE" }, { employeeId: { not: null } }],
+      },
+      select: { id: true, status: true, expiryDate: true },
+    });
+
+    const validEmployeeDocs = employeeDocs.filter(
+      (d) =>
+        (d.expiryDate && d.expiryDate > ninetyDaysFromNow) ||
+        (d.status === "ACTIVE" && (!d.expiryDate || d.expiryDate > ninetyDaysFromNow))
+    ).length;
+
+    const expiring90Docs = employeeDocs.filter(
+      (d) => d.expiryDate && d.expiryDate > thirtyDaysFromNow && d.expiryDate <= ninetyDaysFromNow
+    ).length;
+
+    const expiring30Docs = employeeDocs.filter(
+      (d) => d.expiryDate && d.expiryDate >= now && d.expiryDate <= thirtyDaysFromNow
+    ).length;
+
+    const expiredEmployeeDocs = employeeDocs.filter(
+      (d) => (d.expiryDate && d.expiryDate < now) || d.status === "EXPIRED"
+    ).length;
+
+    const expectedDocs = Number(activeEmployees || 0) * 6;
+    const missingDocs = Math.max(0, expectedDocs - employeeDocs.length);
+
     const responsePayload: DashboardDataResponse = {
       metrics: {
         totalEmployees: Number(totalEmployees || 0),
@@ -96,6 +130,13 @@ export async function GET() {
         foodCostPercent,
         openFindings: Number(openFindings || 0),
         currency: "AED",
+        employeeDocStats: {
+          valid: validEmployeeDocs,
+          expiring90: expiring90Docs,
+          expiring30: expiring30Docs,
+          expired: expiredEmployeeDocs,
+          missing: missingDocs,
+        },
       },
       recentAudits: recentAudits.map((a) => ({
         id: a.id,

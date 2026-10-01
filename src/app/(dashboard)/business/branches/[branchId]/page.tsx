@@ -36,6 +36,7 @@ import {
   Edit2,
   ArrowRightLeft,
   Hash,
+  Users,
 } from "lucide-react";
 
 interface DocumentVersionItem {
@@ -130,6 +131,7 @@ export default function BranchDetailPage({
   const [metrics, setMetrics] = useState<BranchMetrics | null>(null);
   const [documents, setDocuments] = useState<BranchDocument[]>([]);
   const [documentTypes, setDocumentTypes] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   // Search and Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -219,6 +221,7 @@ export default function BranchDetailPage({
       setMetrics(data.metrics);
       setDocuments(data.documents);
       setDocumentTypes(data.documentTypes);
+      setEmployees(data.employees || []);
 
       if (data.branch) {
         setEditBranchForm({
@@ -859,6 +862,124 @@ export default function BranchDetailPage({
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* 4. Branch Employees & Documents Compliance Section */}
+      <div className="space-y-4 bg-[#141720] border border-[#1e2433] rounded-3xl p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1e2433]">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-rose-500" />
+              <span>{locale === "ar" ? "موظفو الفرع ومستنداتهم" : "Branch Employees & Documents"}</span>
+              <span className="text-xs text-slate-400 font-mono font-normal">
+                ({employees.length})
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {locale === "ar"
+                ? "متابعة كادر العمل في هذا الفرع وحالة مستنداتهم الرسمية والإقامات وتواريخ الانتهاء"
+                : "Manage branch workforce, identity papers, residence visas, and expiry alerts"}
+            </p>
+          </div>
+          <Link
+            href="/employees"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 flex items-center gap-1.5 transition self-start sm:self-auto"
+          >
+            <Users className="w-3.5 h-3.5 text-rose-400" />
+            <span>{locale === "ar" ? "إدارة جميع الموظفين" : "All Employees"}</span>
+          </Link>
+        </div>
+
+        {employees.length === 0 ? (
+          <div className="py-10 text-center text-slate-400">
+            <Users className="w-10 h-10 mx-auto mb-2 text-slate-600" />
+            <p className="text-xs text-slate-400">
+              {locale === "ar" ? "لا يوجد موظفون مسجلون في هذا الفرع حالياً" : "No employees assigned to this branch yet"}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {employees.map((emp) => (
+              <div
+                key={emp.id}
+                className="p-4 bg-[#0c0e12] border border-[#1e2433] hover:border-rose-900/40 rounded-2xl flex flex-col justify-between transition-all"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-11 h-11 rounded-xl overflow-hidden bg-[#161a24] border border-[#1e2433] flex items-center justify-center flex-shrink-0">
+                      {emp.photoUrl ? (
+                        <img src={emp.photoUrl} alt={emp.nameEn} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-rose-400 font-bold text-xs">{emp.nameEn?.slice(0, 1)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/employees/${emp.id}`} className="text-xs font-bold text-white hover:text-rose-400 transition-colors truncate block">
+                        {locale === "ar" ? emp.nameAr || emp.nameEn : emp.nameEn}
+                      </Link>
+                      <div className="text-[11px] text-slate-400 truncate">{emp.jobTitle}</div>
+                      <div className="text-[10px] text-rose-400 font-mono">{emp.employeeCode}</div>
+                    </div>
+                  </div>
+
+                  {/* Document Status Pills */}
+                  <div className="pt-2 border-t border-[#1e2433] space-y-1.5 text-[11px]">
+                    <div className="flex items-center justify-between text-slate-400 text-[10px]">
+                      <span>{locale === "ar" ? "المستندات:" : "Documents:"}</span>
+                      <span className="font-mono">{emp.documents?.length || 0}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1">
+                      {emp.docMetrics?.expired > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-950/80 text-rose-400 border border-rose-800/40">
+                          🔴 {emp.docMetrics.expired} {locale === "ar" ? "منتهي" : "expired"}
+                        </span>
+                      )}
+                      {emp.docMetrics?.expiring > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-400 border border-amber-800/40">
+                          🟡 {emp.docMetrics.expiring} {locale === "ar" ? "قريب" : "expiring"}
+                        </span>
+                      )}
+                      {emp.docMetrics?.active > 0 && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">
+                          🟢 {emp.docMetrics.active} {locale === "ar" ? "ساري" : "valid"}
+                        </span>
+                      )}
+                      {(!emp.docMetrics || emp.docMetrics.total === 0) && (
+                        <span className="text-[10px] text-slate-500">
+                          ⚪ {locale === "ar" ? "لا توجد مستندات" : "No docs"}
+                        </span>
+                      )}
+                    </div>
+
+                    {emp.docMetrics?.nearestExpiry && (
+                      <div className="text-[10px] flex items-center gap-1 text-slate-400 pt-1">
+                        <Calendar className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                        <span className="truncate">
+                          {locale === "ar" ? emp.docMetrics.nearestExpiry.documentType?.nameAr : emp.docMetrics.nearestExpiry.documentType?.nameEn}:
+                        </span>
+                        <span className={emp.docMetrics.nearestExpiry.daysRemaining < 0 ? "text-rose-400 font-bold" : "text-amber-400 font-bold"}>
+                          {emp.docMetrics.nearestExpiry.daysRemaining < 0
+                            ? (locale === "ar" ? `منتهي منذ ${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}ي` : `Expired ${Math.abs(emp.docMetrics.nearestExpiry.daysRemaining)}d ago`)
+                            : (locale === "ar" ? `${emp.docMetrics.nearestExpiry.daysRemaining} يوم` : `${emp.docMetrics.nearestExpiry.daysRemaining}d`)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-[#1e2433]">
+                  <Link
+                    href={`/employees/${emp.id}`}
+                    className="w-full py-1.5 px-3 bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/30 text-rose-300 rounded-xl text-[11px] font-semibold flex items-center justify-center gap-1.5 transition"
+                  >
+                    <span>{locale === "ar" ? "عرض ملف الموظف" : "View Employee Profile"}</span>
+                    <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180" />
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

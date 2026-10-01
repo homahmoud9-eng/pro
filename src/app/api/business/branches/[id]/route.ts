@@ -106,7 +106,75 @@ export async function GET(
     orderBy: { nameEn: "asc" },
   });
 
-  // 6. Record Audit Event for Branch Access
+  // 6. Fetch Branch Employees with their Compliance Documents
+  const now = new Date();
+  const rawBranchEmployees = await prisma.employee.findMany({
+    where: {
+      organizationId: actor.organizationId,
+      branchId: id,
+    },
+    include: {
+      documents: {
+        include: {
+          documentType: true,
+          currentVersion: true,
+        },
+        orderBy: { expiryDate: "asc" },
+      },
+    },
+    orderBy: { nameEn: "asc" },
+  });
+
+  const branchEmployees = rawBranchEmployees.map((emp) => {
+    const docs = emp.documents || [];
+    const activeDocs = docs.filter((d) => d.status === "ACTIVE").length;
+    const expiringDocs = docs.filter((d) => d.status === "EXPIRING_SOON").length;
+    const expiredDocs = docs.filter((d) => d.status === "EXPIRED").length;
+    let nearestDoc: any = null;
+    let minDays: number | null = null;
+    docs.forEach((d) => {
+      if (d.expiryDate) {
+        const diff = Math.ceil((new Date(d.expiryDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (minDays === null || diff < minDays) {
+          minDays = diff;
+          nearestDoc = { ...d, daysRemaining: diff };
+        }
+      }
+    });
+
+    return {
+      id: emp.id,
+      nameEn: emp.nameEn,
+      nameAr: emp.nameAr,
+      employeeCode: emp.employeeCode,
+      jobTitle: emp.jobTitle,
+      photoUrl: emp.photoUrl,
+      status: emp.status,
+      docMetrics: {
+        total: docs.length,
+        active: activeDocs,
+        expiring: expiringDocs,
+        expired: expiredDocs,
+        nearestExpiry: nearestDoc,
+      },
+      documents: docs.map((d) => {
+        const daysRemaining = d.expiryDate
+          ? Math.ceil((new Date(d.expiryDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        return {
+          id: d.id,
+          title: d.title,
+          status: d.status,
+          issueDate: d.issueDate,
+          expiryDate: d.expiryDate,
+          daysRemaining,
+          documentType: d.documentType,
+        };
+      }),
+    };
+  });
+
+  // 7. Record Audit Event for Branch Access
   await writeAuditLog({
     organizationId: actor.organizationId,
     branchId: id,
@@ -136,6 +204,7 @@ export async function GET(
     },
     documents,
     documentTypes,
+    employees: branchEmployees,
   });
 }
 

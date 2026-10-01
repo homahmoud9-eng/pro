@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionActor } from "@/lib/auth/session";
 import { authorizeMutation, SecurityError } from "@/lib/security/mutation-guard";
-import { saveDocumentFile, validatePdfBytes } from "@/lib/storage/document-storage";
+import { saveDocumentFile, validatePdfBytes, detectFileFormat } from "@/lib/storage/document-storage";
 
 export async function GET(req: NextRequest) {
   const actor = await getSessionActor();
@@ -124,19 +124,20 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
 
-      const val = validatePdfBytes(fileBuffer);
+      const val = detectFileFormat(fileBuffer);
       if (!val.valid) {
         return NextResponse.json({ error: val.reason }, { status: 400 });
       }
     } else {
       return NextResponse.json(
-        { error: "PDF file attachment is required for compliance documents." },
+        { error: "File attachment (PDF, JPG, PNG, or WEBP) is required." },
         { status: 400 }
       );
     }
 
     const issueDate = issueDateStr ? new Date(issueDateStr) : null;
     const expiryDate = expiryDateStr ? new Date(expiryDateStr) : null;
+    const reminderDays = formData.get("reminderDays") as string | null;
 
     // Calculate initial status
     let status = "ACTIVE";
@@ -156,6 +157,7 @@ export async function POST(req: NextRequest) {
         data: {
           organizationId: actor.organizationId,
           branchId,
+          employeeId: entityType === "EMPLOYEE" && entityId ? entityId : null,
           entityType,
           entityId,
           documentTypeId,
@@ -194,6 +196,21 @@ export async function POST(req: NextRequest) {
         where: { id: doc.id },
         data: { currentVersionId: version.id },
       });
+
+      // Add reminders if configured
+      if (reminderDays) {
+        const daysList = reminderDays.split(",").map(d => parseInt(d.trim(), 10)).filter(d => !isNaN(d));
+        for (const days of daysList) {
+          const reminderType = days <= 7 ? "URGENT" : days <= 30 ? "IMPORTANT" : "EARLY_WARNING";
+          await tx.documentReminder.create({
+            data: {
+              documentId: doc.id,
+              daysBeforeExpiry: days,
+              reminderType,
+            },
+          });
+        }
+      }
 
       return doc;
     });

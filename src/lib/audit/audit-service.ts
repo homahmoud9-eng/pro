@@ -8,6 +8,12 @@ const AUDIT_SECRET =
 export function canonicalJson(obj: any): string {
   if (obj === null || obj === undefined) return "";
   if (obj instanceof Date) return JSON.stringify(obj.toISOString());
+  if (typeof obj?.toNumber === "function") {
+    return JSON.stringify(obj.toNumber());
+  }
+  if (typeof obj?.toJSON === "function" && !(obj instanceof Date)) {
+    return canonicalJson(obj.toJSON());
+  }
   if (typeof obj !== "object") return JSON.stringify(obj);
   if (Array.isArray(obj)) {
     return "[" + obj.map(canonicalJson).join(",") + "]";
@@ -69,6 +75,9 @@ export async function writeAuditLog(params: WriteAuditParams) {
 
   const nextSeq = chainHead.sequenceNumber + 1;
   const occurredAt = new Date();
+  const cleanChangesAfter = params.changesAfter !== undefined && params.changesAfter !== null
+    ? JSON.parse(JSON.stringify(params.changesAfter))
+    : null;
 
   // Compute hash over canonical payload
   const hashPayload = {
@@ -78,7 +87,7 @@ export async function writeAuditLog(params: WriteAuditParams) {
     entityType: params.entityType,
     entityId: params.entityId || "",
     occurredAt: occurredAt.toISOString(),
-    changesAfter: params.changesAfter || null,
+    changesAfter: cleanChangesAfter,
   };
 
   const hash = computeAuditHash(chainHead.currentHash, hashPayload);

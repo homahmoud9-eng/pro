@@ -56,6 +56,15 @@ export async function GET(req: NextRequest) {
       include: {
         branch: { select: { id: true, nameEn: true, nameAr: true, code: true } },
         department: { select: { id: true, nameEn: true, nameAr: true, code: true } },
+        documents: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            expiryDate: true,
+            documentType: { select: { nameEn: true, nameAr: true } },
+          },
+        },
       },
       orderBy: { employeeCode: "asc" },
       skip: (page - 1) * limit,
@@ -71,8 +80,35 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  // Mask salary if user doesn't have permission
+  // Mask salary if user doesn't have permission & calculate dynamic doc stats
+  const now = new Date();
   const safeEmployees = employees.map((emp) => {
+    const docs = emp.documents || [];
+    const activeDocs = docs.filter((d) => d.status === "ACTIVE").length;
+    const expiringDocs = docs.filter((d) => d.status === "EXPIRING_SOON").length;
+    const expiredDocs = docs.filter((d) => d.status === "EXPIRED").length;
+
+    // Find nearest future or closest past expiry
+    let nearestDoc: any = null;
+    let minDays: number | null = null;
+    docs.forEach((d) => {
+      if (d.expiryDate) {
+        const diff = Math.ceil((new Date(d.expiryDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (minDays === null || diff < minDays) {
+          minDays = diff;
+          nearestDoc = { ...d, daysRemaining: diff };
+        }
+      }
+    });
+
+    const docMetrics = {
+      total: docs.length,
+      active: activeDocs,
+      expiring: expiringDocs,
+      expired: expiredDocs,
+      nearestExpiry: nearestDoc,
+    };
+
     if (!hasSalaryPermission) {
       const { basicSalary, housingAllowance, transportAllowance, otherAllowances, ...rest } = emp;
       return {
@@ -81,9 +117,13 @@ export async function GET(req: NextRequest) {
         housingAllowance: null,
         transportAllowance: null,
         otherAllowances: null,
+        docMetrics,
       };
     }
-    return emp;
+    return {
+      ...emp,
+      docMetrics,
+    };
   });
 
   return NextResponse.json({
@@ -119,6 +159,7 @@ export async function POST(req: NextRequest) {
       otherAllowances = 0,
       gender,
       nationality,
+      photoUrl,
       mobile,
       email,
       joiningDate,
@@ -177,6 +218,7 @@ export async function POST(req: NextRequest) {
         jobTitle,
         gender: gender || null,
         nationality: nationality || null,
+        photoUrl: photoUrl || null,
         basicSalary: Number(basicSalary),
         housingAllowance: Number(housingAllowance),
         transportAllowance: Number(transportAllowance),

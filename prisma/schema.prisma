@@ -63,6 +63,7 @@ model Organization {
   endOfServiceCalcs      EndOfServiceCalculation[]
   auditLogs              AuditLog[]
   notifications          Notification[]
+  contracts              Contract[]
   auditChainHead         AuditChainHead?
 }
 
@@ -300,13 +301,30 @@ model Document {
 
   organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch         Branch?           @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  employeeId     String?
+  employee       Employee?         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   documentType   DocumentType      @relation(fields: [documentTypeId], references: [id], onDelete: Restrict)
   versions       DocumentVersion[] @relation("DocumentVersions")
   currentVersion DocumentVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  reminders      DocumentReminder[]
 
   @@index([organizationId, entityType, entityId])
+  @@index([organizationId, employeeId])
   @@index([organizationId, status])
   @@index([organizationId, expiryDate])
+}
+
+model DocumentReminder {
+  id               String    @id @default(uuid())
+  documentId       String
+  daysBeforeExpiry Int       // 90, 60, 45, 30, 15, 7, 0
+  reminderType     String    @default("EXPIRY_WARNING") // EARLY_WARNING, IMPORTANT, URGENT, EXPIRED
+  sentAt           DateTime?
+  createdAt        DateTime  @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
 }
 
 model DocumentVersion {
@@ -425,10 +443,35 @@ model Employee {
   payrollEntries       PayrollEntry[]
   endOfServiceCalcs    EndOfServiceCalculation[]
   foodHandlerTrainings FoodHandlerTraining[]
+  documents            Document[]
+  contracts            Contract[]
 
   @@unique([organizationId, employeeCode])
   @@index([organizationId, status])
   @@index([organizationId, branchId])
+}
+
+model Contract {
+  id             String    @id @default(uuid())
+  organizationId String
+  employeeId     String
+  contractType   String    // LIMITED, UNLIMITED, PROBATION, PART_TIME, TEMPORARY
+  contractNumber String?
+  startDate      DateTime
+  endDate        DateTime?
+  basicSalary    Decimal   @default(0) @db.Decimal(12, 2)
+  allowances     Decimal   @default(0) @db.Decimal(12, 2)
+  fileUrl        String?
+  notes          String?
+  status         String    @default("ACTIVE") // ACTIVE, EXPIRING_SOON, EXPIRED, TERMINATED, RENEWED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, employeeId])
+  @@index([status])
 }
 
 model AttendanceRecord {

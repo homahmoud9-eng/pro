@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionActor } from "@/lib/auth/session";
 import { authorizeMutation, SecurityError } from "@/lib/security/mutation-guard";
-import { saveDocumentFile, validatePdfBytes } from "@/lib/storage/document-storage";
+import { saveDocumentFile, validatePdfBytes, detectFileFormat } from "@/lib/storage/document-storage";
 
 export async function POST(
   req: NextRequest,
@@ -18,7 +18,9 @@ export async function POST(
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const notes = formData.get("notes") as string | null;
+    const newIssueDateStr = formData.get("issueDate") as string | null;
     const newExpiryDateStr = formData.get("expiryDate") as string | null;
+    const reminderDays = formData.get("reminderDays") as string | null;
     const authorizationPassword = formData.get("authorizationPassword") as string;
 
     const doc = await prisma.document.findUnique({
@@ -33,7 +35,7 @@ export async function POST(
     }
 
     if (!file) {
-      return NextResponse.json({ error: "PDF file is required for new version." }, { status: 400 });
+      return NextResponse.json({ error: "File attachment (PDF, JPG, PNG, or WEBP) is required for new version." }, { status: 400 });
     }
 
     const requiredPermission =
@@ -56,7 +58,7 @@ export async function POST(
     const arrayBuffer = await file.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
 
-    const val = validatePdfBytes(fileBuffer);
+    const val = detectFileFormat(fileBuffer);
     if (!val.valid) {
       return NextResponse.json({ error: val.reason }, { status: 400 });
     }
@@ -104,6 +106,7 @@ export async function POST(
         where: { id: doc.id },
         data: {
           currentVersionId: version.id,
+          issueDate: newIssueDateStr ? new Date(newIssueDateStr) : doc.issueDate,
           expiryDate: newExpiry,
           status,
         },
@@ -112,6 +115,21 @@ export async function POST(
           versions: { orderBy: { versionNumber: "desc" } },
         },
       });
+
+      if (reminderDays) {
+        await tx.documentReminder.deleteMany({ where: { documentId: doc.id } });
+        const daysList = reminderDays.split(",").map(d => parseInt(d.trim(), 10)).filter(d => !isNaN(d));
+        for (const days of daysList) {
+          const reminderType = days <= 7 ? "URGENT" : days <= 30 ? "IMPORTANT" : "EARLY_WARNING";
+          await tx.documentReminder.create({
+            data: {
+              documentId: doc.id,
+              daysBeforeExpiry: days,
+              reminderType,
+            },
+          });
+        }
+      }
 
       return { version, updatedDoc };
     });
@@ -126,7 +144,7 @@ export async function POST(
       notes,
     });
 
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, document: result.updatedDoc, ...result });
   } catch (error: any) {
     if (error instanceof SecurityError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.statusCode });

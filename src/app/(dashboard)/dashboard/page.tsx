@@ -260,6 +260,142 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Employee Documents & Compliance Widget (Section 13) */}
+      <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <div className="p-2.5 bg-rose-600/20 text-rose-400 rounded-2xl border border-rose-500/20">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center space-x-2 rtl:space-x-reverse">
+                <span>{locale === "ar" ? "مستندات وإقامات الموظفين" : "Employee Documents & Compliance"}</span>
+                <span className="text-[10px] font-mono bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                  {metrics.totalEmployees} {locale === "ar" ? "موظف مسجل" : "Employees"}
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {locale === "ar" ? "متابعة تواريخ الإقامات، الجوازات، الهويات والعقود وتنبيهات التجديد المبكر" : "Tracking visas, passports, Emirates IDs, contracts, and renewal alerts"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <Link
+              href="/documents/expiring"
+              className="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl text-xs font-semibold flex items-center space-x-1.5 rtl:space-x-reverse transition"
+            >
+              <FileClock className="w-3.5 h-3.5" />
+              <span>{locale === "ar" ? "المستندات المنتهية والقريبة" : "Expiring & Expired"}</span>
+            </Link>
+            <Link
+              href="/employees"
+              className="px-3.5 py-2 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] text-slate-200 rounded-xl text-xs font-semibold flex items-center space-x-1.5 rtl:space-x-reverse transition"
+            >
+              <span>{locale === "ar" ? "إدارة الموظفين" : "Manage Employees"}</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Dynamic Counter Pills Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {/* Valid */}
+          <Link
+            href="/documents?status=ACTIVE"
+            className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-800/30 hover:border-emerald-600 transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-emerald-400 flex items-center space-x-1.5 rtl:space-x-reverse">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>{locale === "ar" ? "سارية" : "Valid"}</span>
+              </span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-white group-hover:text-emerald-400 transition">
+              {metrics.employeeDocStats?.valid || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {locale === "ar" ? "مكتملة ومحدثة" : "Active & updated"}
+            </div>
+          </Link>
+
+          {/* Expiring in 90 Days */}
+          <Link
+            href="/documents/expiring?status=EXPIRING_SOON"
+            className="p-4 rounded-2xl bg-yellow-950/20 border border-yellow-800/30 hover:border-yellow-600 transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-yellow-400 flex items-center space-x-1.5 rtl:space-x-reverse">
+                <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                <span>{locale === "ar" ? "خلال 90 يوم" : "Within 90 Days"}</span>
+              </span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-white group-hover:text-yellow-400 transition">
+              {metrics.employeeDocStats?.expiring90 || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {locale === "ar" ? "تحذير مسبق للتجديد" : "Early warning window"}
+            </div>
+          </Link>
+
+          {/* Expiring in 30 Days */}
+          <Link
+            href="/documents/expiring?status=EXPIRING_SOON"
+            className="p-4 rounded-2xl bg-amber-950/30 border border-amber-800/40 hover:border-amber-600 transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-amber-400 flex items-center space-x-1.5 rtl:space-x-reverse">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <span>{locale === "ar" ? "خلال 30 يوم" : "Within 30 Days"}</span>
+              </span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-amber-400 group-hover:text-amber-300 transition">
+              {metrics.employeeDocStats?.expiring30 || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {locale === "ar" ? "إجراء مطلوب عاجلاً" : "Urgent action required"}
+            </div>
+          </Link>
+
+          {/* Expired */}
+          <Link
+            href="/documents/expiring?status=EXPIRED"
+            className="p-4 rounded-2xl bg-rose-950/30 border border-rose-800/40 hover:border-rose-600 transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-rose-400 flex items-center space-x-1.5 rtl:space-x-reverse">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>{locale === "ar" ? "منتهية" : "Expired"}</span>
+              </span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-rose-400 group-hover:text-rose-300 transition">
+              {metrics.employeeDocStats?.expired || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {locale === "ar" ? "مخالفة وتتطلب التجديد" : "Immediate renewal due"}
+            </div>
+          </Link>
+
+          {/* Missing */}
+          <Link
+            href="/employees"
+            className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-600 transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-slate-400 flex items-center space-x-1.5 rtl:space-x-reverse">
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                <span>{locale === "ar" ? "ناقصة" : "Missing"}</span>
+              </span>
+            </div>
+            <div className="text-2xl font-bold font-mono text-slate-300 group-hover:text-white transition">
+              {metrics.employeeDocStats?.missing || 0}
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">
+              {locale === "ar" ? "مستندات إلزامية لم تُرفع" : "Mandatory docs missing"}
+            </div>
+          </Link>
+        </div>
+      </div>
+
       {/* Secondary Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Compliance & Food Safety Status Panel */}
