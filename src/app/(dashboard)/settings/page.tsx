@@ -21,15 +21,34 @@ import { AuthorizationPasswordDialog } from '@/components/security/authorization
 interface UserAccount {
   id: string;
   email: string;
-  fullName: string;
-  mobile: string;
-  isActive: boolean;
-  branchScopeType: string;
-  role: {
-    name: string;
-    description: string;
+  fullName?: string;
+  name?: string;
+  username?: string;
+  mobile?: string;
+  isActive?: boolean;
+  status?: string;
+  branchScopeType?: string;
+  role?: {
+    id?: string;
+    name?: string;
+    roleKey?: string;
+    description?: string;
   };
-  branches: Array<{
+  roles?: Array<{
+    role: {
+      id: string;
+      name: string;
+      description?: string;
+    };
+  }>;
+  branches?: Array<{
+    branch: {
+      id: string;
+      nameEn: string;
+      nameAr?: string;
+    };
+  }>;
+  branchScopes?: Array<{
     branch: {
       id: string;
       nameEn: string;
@@ -38,10 +57,26 @@ interface UserAccount {
   }>;
 }
 
+interface BranchOption {
+  id: string;
+  nameEn: string;
+  nameAr?: string;
+  code: string;
+}
+
+interface RoleOption {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export default function SettingsPage() {
   const { language, t } = useI18n();
   const [users, setUsers] = useState<UserAccount[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<RoleOption[]>([]);
+  const [availableBranches, setAvailableBranches] = useState<BranchOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // New user modal
   const [showUserModal, setShowUserModal] = useState(false);
@@ -53,7 +88,7 @@ export default function SettingsPage() {
     branchScopeType: 'BRANCH_MANAGER',
     loginPassword: '',
     authorizationPassword: '',
-    branchId: 'cmm_br_bateen'
+    branchId: ''
   });
 
   const [authDialog, setAuthDialog] = useState<{
@@ -77,6 +112,14 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setUsers(data.users || []);
+        if (data.roles) setAvailableRoles(data.roles);
+        if (data.branches && data.branches.length > 0) {
+          setAvailableBranches(data.branches);
+          setUserForm((prev) => ({
+            ...prev,
+            branchId: prev.branchId || data.branches[0].id,
+          }));
+        }
       }
     } catch (err) {
       console.error('Failed to load users', err);
@@ -91,28 +134,53 @@ export default function SettingsPage() {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
+    setActionError(null);
     setAuthDialog({
       open: true,
-      title: 'Authorize System User Creation',
-      description: 'Provisioning new system credentials and RBAC security access requires Level-2 Authorization Password.',
+      title: language === 'ar' ? 'تفويض إنشاء مستخدم جديد' : 'Authorize System User Creation',
+      description: language === 'ar'
+        ? 'إنشاء مستخدم جديد وتعيين صلاحيات RBAC يتطلب إدخال كلمة مرور التفويض (المستوى الثاني).'
+        : 'Provisioning new system credentials and RBAC security access requires Level-2 Authorization Password.',
       actionName: 'CREATE_USER',
       onSuccess: async (authPassword: string) => {
-        const res = await fetch('/api/settings/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...userForm,
-            authorizationPasswordConfirm: authPassword
-          })
-        });
+        try {
+          const res = await fetch('/api/settings/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: userForm.fullName,
+              fullName: userForm.fullName,
+              email: userForm.email,
+              username: userForm.email.split('@')[0],
+              roleName: userForm.roleName,
+              branchScopeIds: userForm.roleName === 'BRANCH_MANAGER' && userForm.branchId ? [userForm.branchId] : [],
+              initialLoginPassword: userForm.loginPassword,
+              initialAuthPassword: userForm.authorizationPassword,
+              authorizationPasswordConfirm: authPassword,
+            }),
+          });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || 'Failed to create user');
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Failed to create user');
+          }
+
+          setShowUserModal(false);
+          setUserForm({
+            email: '',
+            fullName: '',
+            mobile: '+971 50 ',
+            roleName: 'BRANCH_MANAGER',
+            branchScopeType: 'BRANCH_MANAGER',
+            loginPassword: '',
+            authorizationPassword: '',
+            branchId: availableBranches[0]?.id || '',
+          });
+          await fetchUsers();
+        } catch (err: any) {
+          setActionError(err.message || 'Error occurred');
+          throw err;
         }
-
-        setShowUserModal(false);
-        fetchUsers();
       }
     });
   };
@@ -132,13 +200,23 @@ export default function SettingsPage() {
         </div>
 
         <button
-          onClick={() => setShowUserModal(true)}
+          onClick={() => {
+            setActionError(null);
+            setShowUserModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
         >
           <UserPlus className="h-4 w-4" />
           {t.settings.provisionNewUser}
         </button>
       </div>
+
+      {actionError && (
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
+          <XCircle className="h-5 w-5 flex-shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
 
       {/* Security Architecture Notice */}
       <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-md flex items-start gap-4">
@@ -181,50 +259,63 @@ export default function SettingsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900 dark:text-white">
-                        {u.fullName}
-                      </div>
-                      <div className="text-xs text-slate-400 font-mono mt-0.5">
-                        {u.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                        {t.enums.roles[u.role.name as keyof typeof t.enums.roles] || u.role.name}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-slate-700 dark:text-slate-300">
-                      {u.branchScopeType === 'ALL_BRANCHES' ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t.settings.consolidatedAll}</span>
-                      ) : (
-                        <span>{u.branches.map(b => (language === 'ar' ? (b.branch.nameAr || b.branch.nameEn) : b.branch.nameEn)).join(', ') || t.settings.selectedBranch}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                      {u.mobile}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                        <Lock className="h-3 w-3" />
-                        {t.settings.dualPasswordProtected}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {u.isActive ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
-                          <CheckCircle className="h-4 w-4" /> {t.settings.activeStatus}
+                {users.map((u) => {
+                  const roleName = u.role?.name || u.roles?.[0]?.role?.name || 'Staff';
+                  const roleKey = u.role?.roleKey || roleName.toUpperCase().replace(/\s+/g, '_');
+                  const roleLabel = (t.enums.roles as Record<string, string>)[roleKey] || (t.enums.roles as Record<string, string>)[roleName] || roleName;
+                  const userBranches = (u.branches && u.branches.length > 0) ? u.branches : (u.branchScopes || []);
+                  const isAll = u.branchScopeType === 'ALL_BRANCHES' || userBranches.length === 0;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900 dark:text-white">
+                          {u.fullName || u.name || u.email}
+                        </div>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">
+                          {u.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                          {roleLabel}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600">
-                          <XCircle className="h-4 w-4" /> {t.settings.inactiveStatus}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {isAll ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t.settings.consolidatedAll}</span>
+                        ) : (
+                          <span>
+                            {userBranches
+                              .map(b => (language === 'ar' ? (b.branch?.nameAr || b.branch?.nameEn) : b.branch?.nameEn))
+                              .filter(Boolean)
+                              .join(', ') || t.settings.selectedBranch}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                        {u.mobile || (u.username ? `@${u.username}` : '—')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                          <Lock className="h-3 w-3" />
+                          {t.settings.dualPasswordProtected}
                         </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        {u.isActive || u.status === 'ACTIVE' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
+                            <CheckCircle className="h-4 w-4" /> {t.settings.activeStatus}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600">
+                            <XCircle className="h-4 w-4" /> {t.settings.inactiveStatus}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -296,6 +387,26 @@ export default function SettingsPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Branch Selection if Branch Manager */}
+              {userForm.roleName === 'BRANCH_MANAGER' && availableBranches.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {t.settings.branchScope}
+                  </label>
+                  <select
+                    value={userForm.branchId}
+                    onChange={(e) => setUserForm({ ...userForm, branchId: e.target.value })}
+                    className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl"
+                  >
+                    {availableBranches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {language === 'ar' ? (b.nameAr || b.nameEn) : b.nameEn} ({b.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Password Setup */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
