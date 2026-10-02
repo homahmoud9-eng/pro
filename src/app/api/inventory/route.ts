@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     ? items.filter((item) => Number(item.currentStock) <= Number(item.reorderPoint))
     : items;
 
-  return NextResponse.json({ data: filteredItems });
+  return NextResponse.json({ data: filteredItems, items: filteredItems });
 }
 
 export async function POST(req: NextRequest) {

@@ -135,42 +135,67 @@ export default function CompliancePage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.adafsaGrade}</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{t.compliance.gradeA}</span>
-            <span className="text-xs font-mono text-slate-400">{t.compliance.score96}</span>
-          </div>
-          <p className="text-[11px] text-slate-500">{t.compliance.municipalityClassification}</p>
-        </div>
+      {(() => {
+        const totalInspections = inspections.length;
+        const avgScore = totalInspections > 0 
+          ? Math.round(inspections.reduce((sum, i) => sum + i.score, 0) / totalInspections) 
+          : null;
+        const currentGrade = inspections[0]?.grade || (avgScore !== null ? (avgScore >= 90 ? 'A' : avgScore >= 80 ? 'B' : 'C') : '—');
+        const openActionsCount = inspections.reduce((acc, insp) => 
+          acc + (insp.findings?.filter(f => f.status !== 'RESOLVED').length || 0), 0
+        );
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.efstCertification}</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">100%</span>
-            <span className="text-xs text-slate-400">{t.compliance.staff14Certified}</span>
-          </div>
-          <p className="text-[11px] text-slate-500">{t.compliance.efstSubtext}</p>
-        </div>
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.adafsaGrade}</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{currentGrade}</span>
+                <span className="text-xs font-mono text-slate-400">
+                  {avgScore !== null ? `${avgScore}%` : '—'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">{t.compliance.municipalityClassification}</p>
+            </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.haccpLogs}</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-teal-600 dark:text-teal-400">{t.compliance.compliant}</span>
-          </div>
-          <p className="text-[11px] text-slate-500">{t.compliance.chillerTemps}</p>
-        </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.efstCertification}</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+                  {totalInspections > 0 ? '100%' : '—'}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {totalInspections > 0 ? `${totalInspections} ${language === 'ar' ? 'زيارات' : 'visits'}` : (language === 'ar' ? 'لا توجد سجلات' : 'No records')}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">{t.compliance.efstSubtext}</p>
+            </div>
 
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.openCorrectiveActions}</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-amber-500">1</span>
-            <span className="text-xs text-slate-400">{t.compliance.actionPending}</span>
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.haccpLogs}</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold text-teal-600 dark:text-teal-400">
+                  {totalInspections > 0 ? t.compliance.compliant : '—'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">{t.compliance.chillerTemps}</p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t.compliance.openCorrectiveActions}</span>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-3xl font-extrabold ${openActionsCount > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  {openActionsCount}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {openActionsCount > 0 ? t.compliance.actionPending : (language === 'ar' ? 'لا إجراءات معلقة' : 'None pending')}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">{t.compliance.minorActionDesc}</p>
+            </div>
           </div>
-          <p className="text-[11px] text-slate-500">{t.compliance.minorActionDesc}</p>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Main Inspection Records & Findings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -182,33 +207,39 @@ export default function CompliancePage() {
           </h2>
 
           <div className="space-y-2.5">
-            {inspections.map((insp) => (
-              <div
-                key={insp.id}
-                onClick={() => setSelectedInspection(insp)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  selectedInspection?.id === insp.id
-                    ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      {insp.inspectionType}
-                    </span>
-                    <p className="text-xs text-slate-500">{insp.inspectorEntity} &middot; {insp.inspectorName}</p>
-                  </div>
-                  <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                    {language === 'ar' ? `الفئة ${insp.grade}` : `Grade ${insp.grade}`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-400 font-mono mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span>{new Date(insp.inspectionDate).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-GB')}</span>
-                  <span>{insp.branch?.nameEn}</span>
-                </div>
+            {inspections.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs">
+                {language === 'ar' ? 'لا توجد زيارات تفتيشية مسجلة حاليًا' : 'No inspection visits recorded currently'}
               </div>
-            ))}
+            ) : (
+              inspections.map((insp) => (
+                <div
+                  key={insp.id}
+                  onClick={() => setSelectedInspection(insp)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                    selectedInspection?.id === insp.id
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        {insp.inspectionType}
+                      </span>
+                      <p className="text-xs text-slate-500">{insp.inspectorEntity} &middot; {insp.inspectorName}</p>
+                    </div>
+                    <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                      {language === 'ar' ? `الفئة ${insp.grade}` : `Grade ${insp.grade}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-mono mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span>{new Date(insp.inspectionDate).toLocaleDateString(language === 'ar' ? 'ar-AE' : 'en-GB')}</span>
+                    <span>{insp.branch?.nameEn}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

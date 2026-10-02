@@ -34,42 +34,6 @@ export default function LoginPage() {
       badge: t.auth.badgeFullAccess,
       color: "border-rose-500/40 text-rose-400 bg-rose-950/20",
     },
-    {
-      role: t.auth.roleHrManager,
-      user: "hrmanager",
-      pass: "HrManager@2026!",
-      auth: "HrAuth@2026!",
-      desc: t.auth.descHrManager,
-      badge: t.auth.badgeHrScope,
-      color: "border-purple-500/40 text-purple-400 bg-purple-950/20",
-    },
-    {
-      role: t.auth.roleBranchManager,
-      user: "bmbateen",
-      pass: "BranchMgr@2026!",
-      auth: "BranchAuth@2026!",
-      desc: t.auth.descBranchManager,
-      badge: t.auth.badgeBranchScoped,
-      color: "border-blue-500/40 text-blue-400 bg-blue-950/20",
-    },
-    {
-      role: t.auth.roleFinanceManager,
-      user: "finance",
-      pass: "FinanceMgr@2026!",
-      auth: "FinanceAuth@2026!",
-      desc: t.auth.descFinanceManager,
-      badge: t.auth.badgeFinanceScope,
-      color: "border-amber-500/40 text-amber-400 bg-amber-950/20",
-    },
-    {
-      role: t.auth.roleComplianceOfficer,
-      user: "compliance",
-      pass: "Compliance@2026!",
-      auth: "ComplianceAuth@2026!",
-      desc: t.auth.descComplianceOfficer,
-      badge: t.auth.badgeComplianceScope,
-      color: "border-emerald-500/40 text-emerald-400 bg-emerald-950/20",
-    },
   ];
 
   const handleLogin = async (e: React.FormEvent) => {

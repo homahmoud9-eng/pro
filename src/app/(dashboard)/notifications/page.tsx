@@ -46,18 +46,20 @@ export default function NotificationsPage() {
 
         if (docRes.ok) {
           const docData = await docRes.json();
+          const docList = docData.data || docData.documents || [];
           const now = new Date();
-          (docData.documents || []).forEach((doc: any) => {
-            if (doc.expiryDate) {
-              const exp = new Date(doc.expiryDate);
+          docList.forEach((doc: any) => {
+            const expDate = doc.expiryDate || doc.currentVersion?.expiryDate;
+            if (expDate) {
+              const exp = new Date(expDate);
               const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               if (diffDays <= 90) {
                 alerts.push({
                   id: doc.id,
-                  title: doc.documentType?.nameEn || 'Legal Document',
+                  title: doc.title || doc.documentType?.nameEn || 'Legal Document',
                   type: 'DOCUMENT_EXPIRY',
                   category: diffDays <= 30 ? 'CRITICAL' : diffDays <= 60 ? 'WARNING' : 'INFO',
-                  expiryDate: doc.expiryDate,
+                  expiryDate: expDate,
                   daysRemaining: diffDays,
                   entityName: doc.branch?.nameEn || 'Corporate',
                   link: '/documents'
@@ -69,8 +71,9 @@ export default function NotificationsPage() {
 
         if (invRes.ok) {
           const invData = await invRes.json();
-          (invData.items || []).forEach((item: any) => {
-            if (item.currentStock <= item.minimumStock) {
+          const itemList = invData.data || invData.items || [];
+          itemList.forEach((item: any) => {
+            if (Number(item.currentStock) <= Number(item.reorderPoint || item.minimumStock || 0)) {
               alerts.push({
                 id: item.id,
                 title: `Low Stock: ${item.nameEn}`,
@@ -78,7 +81,7 @@ export default function NotificationsPage() {
                 category: 'WARNING',
                 expiryDate: new Date().toISOString(),
                 daysRemaining: 0,
-                entityName: `${item.branch?.nameEn} (${item.currentStock} ${item.primaryUnit} left)`,
+                entityName: `${item.branch?.nameEn || 'Central'} (${item.currentStock} ${item.unit || item.primaryUnit || ''} left)`,
                 link: '/operations'
               });
             }

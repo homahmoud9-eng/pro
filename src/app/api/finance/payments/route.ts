@@ -17,7 +17,7 @@ export async function GET() {
     orderBy: { paymentDate: "desc" },
   });
 
-  return NextResponse.json({ data: payments });
+  return NextResponse.json({ data: payments, payments });
 }
 
 export async function POST(req: NextRequest) {

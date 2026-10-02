@@ -17,7 +17,7 @@ export async function GET() {
     orderBy: { legalName: "asc" },
   });
 
-  return NextResponse.json({ data: suppliers });
+  return NextResponse.json({ data: suppliers, suppliers });
 }
 
 export async function POST(req: NextRequest) {

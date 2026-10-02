@@ -198,7 +198,7 @@ export default function DashboardPage() {
             </span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            {t.dashboard.overview} • {locale === "ar" ? "مجموعة مطاعم طاشا (رخصة أبوظبي CN-1984210)" : "Tasha Restaurant Group (Abu Dhabi DED CN-1984210)"}
+            {t.dashboard.overview} • {data.organization ? (locale === "ar" ? `${data.organization.nameAr} (${data.organization.licenseNumbers ? `رخصة: ${data.organization.licenseNumbers}` : data.organization.code})` : `${data.organization.nameEn} (${data.organization.licenseNumbers ? `License: ${data.organization.licenseNumbers}` : data.organization.code})`) : (locale === "ar" ? "لوحة مؤشرات المنشأة" : "Enterprise Operations Console")}
           </p>
         </div>
 

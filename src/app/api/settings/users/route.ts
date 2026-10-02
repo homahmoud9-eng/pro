@@ -10,7 +10,8 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [rawUsers, roles, branches, employees] = await Promise.all([
+  // Exactly ONE role exists: Owner
+  const [rawUsers, roles, branches] = await Promise.all([
     prisma.user.findMany({
       where: { organizationId: actor.organizationId },
       include: {
@@ -29,43 +30,16 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.role.findMany({
-      where: { organizationId: actor.organizationId },
-      orderBy: { name: "asc" },
+      where: { organizationId: actor.organizationId, name: "Owner" },
     }),
     prisma.branch.findMany({
       where: { organizationId: actor.organizationId },
       select: { id: true, nameEn: true, nameAr: true, code: true },
       orderBy: { code: "asc" },
     }),
-    prisma.employee.findMany({
-      where: { organizationId: actor.organizationId },
-      select: { email: true, phone: true },
-    }),
   ]);
 
-  const employeePhoneMap = new Map<string, string>();
-  for (const emp of employees) {
-    if (emp.email && emp.phone) {
-      employeePhoneMap.set(emp.email.toLowerCase(), emp.phone);
-    }
-  }
-
   const users = rawUsers.map((u) => {
-    const primaryRole = u.roles[0]?.role;
-    const roleNormalized = primaryRole?.name ? primaryRole.name.toUpperCase().replace(/\s+/g, "_") : "STAFF";
-    const isAllBranches =
-      u.branchScopes.length === 0 ||
-      primaryRole?.name === "Owner" ||
-      primaryRole?.name === "HR Manager" ||
-      primaryRole?.name === "Finance Manager" ||
-      primaryRole?.name === "Compliance Officer" ||
-      roleNormalized === "OWNER" ||
-      roleNormalized === "HR_MANAGER" ||
-      roleNormalized === "FINANCE_MANAGER" ||
-      roleNormalized === "COMPLIANCE_OFFICER";
-
-    const phone = employeePhoneMap.get(u.email.toLowerCase()) || (u.username ? `@${u.username}` : "—");
-
     return {
       id: u.id,
       email: u.email,
@@ -74,23 +48,17 @@ export async function GET() {
       fullName: u.name,
       status: u.status,
       isActive: u.status === "ACTIVE",
-      mobile: phone,
-      branchScopeType: isAllBranches ? "ALL_BRANCHES" : "SELECTED_BRANCHES",
+      mobile: u.username ? `@${u.username}` : "—",
+      branchScopeType: "ALL_BRANCHES",
       role: {
-        id: primaryRole?.id || "",
-        name: primaryRole?.name || "Staff",
-        roleKey: roleNormalized,
-        description: primaryRole?.description || "",
+        id: roles[0]?.id || "",
+        name: "Owner",
+        roleKey: "OWNER",
+        description: "Full system authority across all modules and branches (المالك)",
       },
       roles: u.roles,
-      branches: u.branchScopes.map((bs) => ({
-        branch: {
-          id: bs.branch.id,
-          nameEn: bs.branch.nameEn,
-          nameAr: bs.branch.nameAr || bs.branch.nameEn,
-        },
-      })),
-      branchScopes: u.branchScopes,
+      branches: [],
+      branchScopes: [],
       securityProfile: u.securityProfile,
       createdAt: u.createdAt,
     };
@@ -117,6 +85,14 @@ export async function POST(req: NextRequest) {
     const initialAuthPassword = body.initialAuthPassword || body.authorizationPassword;
     const authorizationPassword = body.authorizationPasswordConfirm || body.authPassword || body.authorizationPassword;
 
+    // Reject attempt to create any role other than Owner
+    if (body.roleName && body.roleName !== "Owner" && body.roleName !== "OWNER") {
+      return NextResponse.json(
+        { error: "Owner-Only Architecture: Exactly one application role exists (Owner / المالك). Other roles are not permitted." },
+        { status: 400 }
+      );
+    }
+
     if (!name || !email || !username || !initialLoginPassword || !initialAuthPassword) {
       return NextResponse.json(
         { error: "Name, email, username, initial login password and authorization password are required." },
@@ -138,27 +114,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve Role ID
-    let roleId = body.roleId;
-    if (!roleId && body.roleName) {
-      const allRoles = await prisma.role.findMany({
-        where: { organizationId: actor.organizationId },
-      });
-      const match = allRoles.find(
-        (r) =>
-          r.id === body.roleName ||
-          r.name.toLowerCase() === body.roleName.toLowerCase() ||
-          r.name.toUpperCase().replace(/\s+/g, "_") === body.roleName.toUpperCase().replace(/\s+/g, "_")
-      );
-      if (match) {
-        roleId = match.id;
-      }
-    }
+    const ownerRole = await prisma.role.findFirst({
+      where: { organizationId: actor.organizationId, name: "Owner" },
+    });
 
-    // Resolve Branch Scope IDs
-    let branchScopeIds: string[] = Array.isArray(body.branchScopeIds) ? body.branchScopeIds : [];
-    if (branchScopeIds.length === 0 && body.branchId && body.branchId !== "ALL") {
-      branchScopeIds = [body.branchId];
+    if (!ownerRole) {
+      return NextResponse.json({ error: "Owner role not found in system." }, { status: 500 });
     }
 
     const mutationCtx = await authorizeMutation({
@@ -166,9 +127,9 @@ export async function POST(req: NextRequest) {
       permission: "user.create",
       authorizationPassword,
       module: "security",
-      action: "CREATE_USER",
+      action: "CREATE_OWNER_USER",
       entityType: "USER",
-      entityDisplayName: `${name} (${username})`,
+      entityDisplayName: `${name} (${username}) - Owner`,
     });
 
     const saltRounds = 10;
@@ -183,34 +144,23 @@ export async function POST(req: NextRequest) {
           email,
           username,
           status: "ACTIVE",
-          mustChangePassword: true,
+          mustChangePassword: false,
           securityProfile: {
             create: {
               loginPasswordHash,
               authorizationPasswordHash: authPasswordHash,
-              temporaryAuthPassword: true,
+              temporaryAuthPassword: false,
             },
           },
         },
       });
 
-      if (roleId) {
-        await tx.userRole.create({
-          data: {
-            userId: u.id,
-            roleId,
-          },
-        });
-      }
-
-      for (const bId of branchScopeIds) {
-        await tx.userBranchScope.create({
-          data: {
-            userId: u.id,
-            branchId: bId,
-          },
-        });
-      }
+      await tx.userRole.create({
+        data: {
+          userId: u.id,
+          roleId: ownerRole.id,
+        },
+      });
 
       return u;
     });
@@ -219,8 +169,7 @@ export async function POST(req: NextRequest) {
       userId: newUser.id,
       name: newUser.name,
       email: newUser.email,
-      roleId,
-      branchScopeIds,
+      role: "Owner",
     });
 
     return NextResponse.json({ success: true, user: newUser });

@@ -27,7 +27,7 @@ export async function GET() {
     }),
   ]);
 
-  return NextResponse.json({ data: expenses, categories, branches });
+  return NextResponse.json({ data: expenses, expenses, categories, branches });
 }
 
 export async function POST(req: NextRequest) {

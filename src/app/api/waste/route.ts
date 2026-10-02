@@ -18,7 +18,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ data: wasteRecords });
+  return NextResponse.json({ data: wasteRecords, wasteRecords });
 }
 
 export async function POST(req: NextRequest) {

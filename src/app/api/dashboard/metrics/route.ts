@@ -29,6 +29,7 @@ export async function GET() {
       taxRecords,
       openFindings,
       recentAudits,
+      organization,
     ] = await Promise.all([
       prisma.employee.count({ where: { organizationId: orgId } }),
       prisma.employee.count({ where: { organizationId: orgId, status: "ACTIVE" } }),
@@ -53,6 +54,10 @@ export async function GET() {
         where: { organizationId: orgId },
         orderBy: { occurredAt: "desc" },
         take: 6,
+      }),
+      prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true, code: true, nameAr: true, nameEn: true, licenseNumbers: true },
       }),
     ]);
 
@@ -138,6 +143,7 @@ export async function GET() {
           missing: missingDocs,
         },
       },
+      organization: organization || undefined,
       recentAudits: recentAudits.map((a) => ({
         id: a.id,
         sequenceNumber: a.sequenceNumber,

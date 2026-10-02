@@ -58,34 +58,24 @@ export async function authorizeMutation(
     throw new SecurityError("ACCOUNT_DISABLED", "Account is disabled or suspended.", 403);
   }
 
-  // 3. Permission Check (Owner role bypasses individual permission check)
+  // 3. Owner-Only Role Model Enforcement
   const isOwner = actor.roles.includes("Owner");
-  if (!isOwner && permission) {
-    const permAliases: Record<string, string[]> = {
-      CREATE_BRANCH: ["CREATE_BRANCH", "branch.create", "business.update"],
-      EDIT_BRANCH: ["EDIT_BRANCH", "branch.update", "business.update"],
-      ARCHIVE_BRANCH: ["ARCHIVE_BRANCH", "branch.archive", "business.update"],
-      REACTIVATE_BRANCH: ["REACTIVATE_BRANCH", "ARCHIVE_BRANCH", "EDIT_BRANCH", "branch.reactivate", "business.update"],
-    };
-    const allowedCodes = permAliases[permission] || [permission];
-    const hasPerm = allowedCodes.some((code) => actor.permissions.includes(code));
-    if (!hasPerm) {
-      await prisma.securityEvent.create({
-        data: {
-          userId: actor.id,
-          eventType: "PERMISSION_DENIED",
-          severity: "HIGH",
-          details: `User attempted action '${options.action}' requiring permission '${permission}' on ${options.entityType}`,
-          ipAddress: options.ipAddress,
-          userAgent: options.userAgent,
-        },
-      });
-      throw new SecurityError(
-        "PERMISSION_DENIED",
-        `You do not have the required permission: ${permission}`,
-        403
-      );
-    }
+  if (!isOwner) {
+    await prisma.securityEvent.create({
+      data: {
+        userId: actor.id,
+        eventType: "PERMISSION_DENIED",
+        severity: "CRITICAL",
+        details: `Non-owner role attempt rejected: user '${actor.username}' has roles [${actor.roles.join(", ")}]`,
+        ipAddress: options.ipAddress,
+        userAgent: options.userAgent,
+      },
+    });
+    throw new SecurityError(
+      "FORBIDDEN",
+      "Access denied: Exactly one application role exists (Owner / المالك). Only Owner is authorized to perform mutations.",
+      403
+    );
   }
 
   // 4. Branch Scope Check

@@ -98,6 +98,7 @@ export default function OperationsPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [branches, setBranches] = useState<{ id: string; nameEn: string; nameAr: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -136,29 +137,37 @@ export default function OperationsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Always fetch branches for select modals
+      const bRes = await fetch('/api/business');
+      if (bRes.ok) {
+        const bData = await bRes.json();
+        const branchList = bData.branches || [];
+        setBranches(branchList);
+      }
+
       if (activeTab === 'inventory') {
         const res = await fetch('/api/inventory');
         if (res.ok) {
           const data = await res.json();
-          setInventory(data.items || []);
+          setInventory(data.data || data.items || []);
         }
       } else if (activeTab === 'recipes') {
         const res = await fetch('/api/recipes');
         if (res.ok) {
           const data = await res.json();
-          setRecipes(data.recipes || []);
+          setRecipes(data.data || data.recipes || []);
         }
       } else if (activeTab === 'waste') {
         const res = await fetch('/api/waste');
         if (res.ok) {
           const data = await res.json();
-          setWasteRecords(data.wasteRecords || []);
+          setWasteRecords(data.data || data.wasteRecords || []);
         }
       } else if (activeTab === 'suppliers') {
         const res = await fetch('/api/suppliers');
         if (res.ok) {
           const data = await res.json();
-          setSuppliers(data.suppliers || []);
+          setSuppliers(data.data || data.suppliers || []);
         }
       }
     } catch (err) {
@@ -421,8 +430,13 @@ export default function OperationsPage() {
             {/* 2. RECIPES TAB (Food Cost Analysis) */}
             {activeTab === 'recipes' && (
               <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {recipes.map((recipe) => {
+                {recipes.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 text-sm">
+                    {language === 'ar' ? 'لا توجد وصفات مسجلة حاليًا.' : 'No recipes recorded currently.'}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {recipes.map((recipe) => {
                     const margin = recipe.sellingPrice - recipe.portionCost;
                     const marginPct = recipe.sellingPrice > 0 ? ((margin / recipe.sellingPrice) * 100).toFixed(1) : 0;
                     const isOptimalFoodCost = recipe.foodCostPct <= 30; // standard UAE F&B benchmark: <= 30-32%
@@ -487,8 +501,9 @@ export default function OperationsPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
             {/* 3. WASTE MANAGEMENT TAB */}
             {activeTab === 'waste' && (
@@ -658,9 +673,11 @@ export default function OperationsPage() {
                   className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">{t.operations.selectDestinationBranch}</option>
-                  <option value="cmm_br_bateen">{language === 'ar' ? 'واجهة البطين البحرية (BR-01)' : 'Al Bateen Waterfront (BR-01)'}</option>
-                  <option value="cmm_br_yas">{language === 'ar' ? 'ياس مول داينينغ هاب (BR-02)' : 'Yas Mall Dining Hub (BR-02)'}</option>
-                  <option value="cmm_br_saadiyat">{language === 'ar' ? 'منطقة السعديات الثقافية (BR-03)' : 'Saadiyat Cultural District (BR-03)'}</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {language === 'ar' ? b.nameAr || b.nameEn : b.nameEn}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -738,7 +755,7 @@ export default function OperationsPage() {
                     setWasteData({
                       ...wasteData,
                       inventoryItemId: e.target.value,
-                      branchId: sel?.branch?.id || 'cmm_br_bateen'
+                      branchId: sel?.branch?.id || branches[0]?.id || ''
                     });
                   }}
                   required

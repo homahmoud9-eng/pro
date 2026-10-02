@@ -56,7 +56,7 @@ export async function GET() {
     };
   });
 
-  return NextResponse.json({ data: calculatedRecipes });
+  return NextResponse.json({ data: calculatedRecipes, recipes: calculatedRecipes });
 }
 
 export async function POST(req: NextRequest) {

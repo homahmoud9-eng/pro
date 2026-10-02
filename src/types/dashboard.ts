@@ -39,6 +39,13 @@ export interface RecentAuditEntry {
 export interface DashboardDataResponse {
   metrics: DashboardMetrics;
   recentAudits: RecentAuditEntry[];
+  organization?: {
+    id: string;
+    code: string;
+    nameAr: string;
+    nameEn: string;
+    licenseNumbers?: string | null;
+  };
 }
 
 export const DEFAULT_DASHBOARD_METRICS: DashboardMetrics = {
