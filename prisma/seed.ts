@@ -189,11 +189,46 @@ async function main() {
 
   // 6. Base Regulatory Document Types (Schema configurations without dummy files)
   const docTypes = [
-    { nameAr: "الرخصة التجارية", nameEn: "Trade License", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
-    { nameAr: "تصريح المنشأة الغذائية (أدافسيا)", nameEn: "ADAFSA Food Permit", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
-    { nameAr: "عقد الإيجار والتوثيق", nameEn: "Tawtheeq Lease Contract", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
-    { nameAr: "شهادة الدفاع المدني والسلامة", nameEn: "Civil Defense Certificate", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    // Business Legal & Licenses
+    { nameAr: "الرخصة التجارية الرئيسية", nameEn: "Main Trade License", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "الرخصة الاقتصادية", nameEn: "Economic License", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "السجل التجاري", nameEn: "Commercial License", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "بطاقة المنشأة", nameEn: "Establishment Card", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "شهادات ورخص التسجيل الحكومي", nameEn: "Government Registration Certificate", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+
+    // Company & Ownership
+    { nameAr: "عقد التأسيس", nameEn: "Memorandum of Association", category: "Business Legal", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+    { nameAr: "النظام الأساسي للشركة", nameEn: "Articles of Association", category: "Business Legal", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+    { nameAr: "اتفاقية الشراكة والملكية", nameEn: "Partnership Agreement", category: "Business Legal", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+    { nameAr: "وثائق ومستندات الملكية", nameEn: "Ownership Documents", category: "Business Legal", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+    { nameAr: "سجل وشهادات المساهمين", nameEn: "Shareholder Documents", category: "Business Legal", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+
+    // Tax
     { nameAr: "شهادة التسجيل الضريبي TRN", nameEn: "Tax Registration Certificate", category: "Tax", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+    { nameAr: "شهادة التسجيل في ضريبة القيمة المضافة", nameEn: "VAT Registration Certificate", category: "Tax", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: true },
+
+    // Contracts
+    { nameAr: "عقد الإيجار والتوثيق الرئيسي", nameEn: "Main Tenancy Lease", category: "Contracts", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "عقود الخدمات والتشغيل", nameEn: "Service Contracts", category: "Contracts", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "عقود التأمين المؤسسي", nameEn: "Insurance Contracts", category: "Contracts", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "عقود التوريد والموردين", nameEn: "Supplier Contracts", category: "Contracts", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "عقود واتفاقيات الشركة الأخرى", nameEn: "Other Company Contracts", category: "Contracts", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+
+    // Compliance
+    { nameAr: "وثيقة التأمين الشامل", nameEn: "Company Insurance", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "تصريح المنشأة الغذائية (أدافسيا)", nameEn: "ADAFSA Food Permit", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "شهادة الدفاع المدني والسلامة", nameEn: "Civil Defense Certificate", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "شهادة الصحة والسلامة المهنية", nameEn: "Health & Safety Certificate", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "الشهادات والاعتمادات الحكومية", nameEn: "Government Certificates", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "شهادات الامتثال والرقابة الأخرى", nameEn: "Other Compliance Documents", category: "Compliance", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+
+    // Other Legal / Internal
+    { nameAr: "السياسات واللوائح الداخلية", nameEn: "Internal Documents", category: "Other", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: false },
+    { nameAr: "مستندات قانونية ورسمية أخرى", nameEn: "Other Legal Documents", category: "Other", requiresPdf: true, requiresExpiryDate: false, requiresReferenceNumber: false },
+
+    // Branch & Employee Specific
+    { nameAr: "الرخصة التجارية", nameEn: "Trade License", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
+    { nameAr: "عقد الإيجار والتوثيق", nameEn: "Tawtheeq Lease Contract", category: "Business Legal", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
     { nameAr: "جواز السفر للموظف", nameEn: "Employee Passport", category: "Employee Identity", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
     { nameAr: "بطاقة الهوية الإماراتية", nameEn: "Emirates ID", category: "Employee Identity", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },
     { nameAr: "تأشيرة الإقامة والعمل", nameEn: "Residency Visa", category: "Employee Identity", requiresPdf: true, requiresExpiryDate: true, requiresReferenceNumber: true },

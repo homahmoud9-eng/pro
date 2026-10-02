@@ -140,3 +140,84 @@ export async function PATCH(
     return NextResponse.json({ error: error.message || "Update failed" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const actor = await getSessionActor();
+    if (!actor) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    let authorizationPassword = "";
+    let reason = "Archived by Owner";
+
+    try {
+      const body = await req.json();
+      authorizationPassword = body.authorizationPassword || "";
+      reason = body.reason || reason;
+    } catch {
+      const { searchParams } = new URL(req.url);
+      authorizationPassword = searchParams.get("authorizationPassword") || "";
+    }
+
+    const currentDoc = await prisma.document.findUnique({
+      where: { id },
+    });
+
+    if (!currentDoc || currentDoc.organizationId !== actor.organizationId) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    const requiredPermission =
+      currentDoc.entityType === "EMPLOYEE"
+        ? "employee_document.delete"
+        : "business_document.delete";
+
+    const actionName =
+      currentDoc.entityType === "ORGANIZATION"
+        ? "BUSINESS_DOCUMENT_ARCHIVED"
+        : "ARCHIVE_DOCUMENT";
+
+    const mutationCtx = await authorizeMutation({
+      actor,
+      permission: requiredPermission,
+      targetBranchId: currentDoc.branchId,
+      authorizationPassword,
+      module: "document",
+      action: actionName,
+      entityType: "DOCUMENT",
+      entityId: id,
+      entityDisplayName: currentDoc.title,
+      changesBefore: { status: currentDoc.status },
+      changesAfter: { status: "ARCHIVED" },
+      reason,
+    });
+
+    const updated = await prisma.document.update({
+      where: { id },
+      data: {
+        status: "ARCHIVED",
+      },
+    });
+
+    await mutationCtx.audit({
+      documentId: id,
+      title: updated.title,
+      status: "ARCHIVED",
+      reason,
+    });
+
+    return NextResponse.json({ success: true, document: updated });
+  } catch (error: any) {
+    if (error instanceof SecurityError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.statusCode });
+    }
+    console.error("Archive document error:", error);
+    return NextResponse.json({ error: error.message || "Failed to archive document" }, { status: 500 });
+  }
+}
+

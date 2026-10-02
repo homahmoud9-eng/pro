@@ -49,7 +49,10 @@ export async function POST(
       targetBranchId: doc.branchId,
       authorizationPassword,
       module: "document",
-      action: "REPLACE_DOCUMENT_VERSION",
+      action:
+        doc.entityType === "ORGANIZATION"
+          ? "BUSINESS_DOCUMENT_REPLACED"
+          : "REPLACE_DOCUMENT_VERSION",
       entityType: "DOCUMENT",
       entityId: doc.id,
       entityDisplayName: doc.title,

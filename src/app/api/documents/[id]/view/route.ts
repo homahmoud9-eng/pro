@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionActor } from "@/lib/auth/session";
 import { readDocumentFile } from "@/lib/storage/document-storage";
+import { writeAuditLog } from "@/lib/audit/audit-service";
 
 export async function GET(
   req: NextRequest,
@@ -59,6 +60,24 @@ export async function GET(
 
   try {
     const pdfBuffer = readDocumentFile(targetVersion.storageKey);
+
+    // Audit view event
+    await writeAuditLog({
+      organizationId: actor.organizationId,
+      branchId: doc.branchId,
+      actorUserId: actor.id,
+      actorNameSnapshot: actor.name,
+      actorEmailSnapshot: actor.email,
+      action:
+        doc.entityType === "ORGANIZATION"
+          ? "BUSINESS_DOCUMENT_VIEWED"
+          : "VIEW_DOCUMENT",
+      module: "document",
+      entityType: "DOCUMENT",
+      entityId: doc.id,
+      entityDisplayName: doc.title,
+      changesAfter: { version: targetVersion.versionNumber },
+    });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,

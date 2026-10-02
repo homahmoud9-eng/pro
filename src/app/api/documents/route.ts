@@ -22,8 +22,14 @@ export async function GET(req: NextRequest) {
     organizationId: actor.organizationId,
   };
 
-  // Enforce branch scoping if user is restricted
-  if (actor.branchScopes.length > 0) {
+  const scope = searchParams.get("scope");
+
+  // Enforce business or branch scoping
+  if (scope === "business" || branchId === "null" || branchId === "none") {
+    where.branchId = null;
+    where.employeeId = null;
+    where.entityType = "ORGANIZATION";
+  } else if (actor.branchScopes.length > 0) {
     where.OR = [
       { branchId: { in: actor.branchScopes } },
       { branchId: null },
@@ -36,7 +42,7 @@ export async function GET(req: NextRequest) {
     where.status = status;
   }
 
-  if (entityType) {
+  if (entityType && scope !== "business") {
     where.entityType = entityType;
   }
 
@@ -54,6 +60,7 @@ export async function GET(req: NextRequest) {
       include: {
         documentType: true,
         currentVersion: true,
+        versions: { orderBy: { versionNumber: "desc" } },
         branch: { select: { id: true, nameEn: true, nameAr: true, code: true } },
       },
       orderBy: { updatedAt: "desc" },
@@ -62,11 +69,13 @@ export async function GET(req: NextRequest) {
     }),
     prisma.documentType.findMany({
       where: { organizationId: actor.organizationId },
+      orderBy: { nameEn: "asc" },
     }),
   ]);
 
   return NextResponse.json({
     data: documents,
+    documents, // envelope compatibility
     documentTypes,
     pagination: {
       page,
@@ -88,9 +97,9 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     const title = formData.get("title") as string;
     const documentTypeId = formData.get("documentTypeId") as string;
-    const entityType = (formData.get("entityType") as string) || "ORGANIZATION";
-    const entityId = (formData.get("entityId") as string) || null;
-    const branchId = (formData.get("branchId") as string) || null;
+    let entityType = (formData.get("entityType") as string) || "ORGANIZATION";
+    let entityId = (formData.get("entityId") as string) || null;
+    let branchId = (formData.get("branchId") as string) || null;
     const referenceNumber = (formData.get("referenceNumber") as string) || null;
     const issueDateStr = formData.get("issueDate") as string | null;
     const expiryDateStr = formData.get("expiryDate") as string | null;
@@ -103,9 +112,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Enforce Business Document Ownership Rule: businessId = Org, branchId = NULL
+    if (entityType === "ORGANIZATION" || !branchId || branchId === "null" || branchId === "none") {
+      entityType = "ORGANIZATION";
+      entityId = actor.organizationId;
+      branchId = null;
+    }
+
     // Determine permission based on entity
     const requiredPermission =
       entityType === "EMPLOYEE" ? "employee_document.upload" : "business_document.upload";
+
+    const auditAction = entityType === "ORGANIZATION" ? "BUSINESS_DOCUMENT_UPLOADED" : "UPLOAD_DOCUMENT";
 
     // Enforce mutation guard (Two-Level Security)
     const mutationCtx = await authorizeMutation({
@@ -114,7 +132,7 @@ export async function POST(req: NextRequest) {
       targetBranchId: branchId,
       authorizationPassword,
       module: "document",
-      action: "UPLOAD_DOCUMENT",
+      action: auditAction,
       entityType: "DOCUMENT",
       entityDisplayName: title,
     });

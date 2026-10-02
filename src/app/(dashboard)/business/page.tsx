@@ -32,6 +32,12 @@ import {
   Clock,
   UserCheck,
   Check,
+  Download,
+  History,
+  Upload,
+  Lock,
+  FileCheck,
+  ArrowRightLeft,
 } from "lucide-react";
 
 export default function BusinessPage() {
@@ -41,6 +47,41 @@ export default function BusinessPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Search and Filter State for Business Documents
+  const [businessDocSearch, setBusinessDocSearch] = useState("");
+  const [businessDocCategoryFilter, setBusinessDocCategoryFilter] = useState("ALL");
+  const [businessDocStatusFilter, setBusinessDocStatusFilter] = useState("ALL");
+
+  // Upload Business Document Modal
+  const [uploadBusinessDocModalOpen, setUploadBusinessDocModalOpen] = useState(false);
+  const [uploadingBusinessDoc, setUploadingBusinessDoc] = useState(false);
+  const [uploadBusinessDocForm, setUploadBusinessDocForm] = useState({
+    documentTypeId: "",
+    title: "",
+    referenceNumber: "",
+    issueDate: "",
+    expiryDate: "",
+    notes: "",
+  });
+  const [uploadBusinessDocFile, setUploadBusinessDocFile] = useState<File | null>(null);
+  const [uploadBusinessDocError, setUploadBusinessDocError] = useState<string | null>(null);
+
+  // Replace Business Document Modal
+  const [replaceBusinessDocModalOpen, setReplaceBusinessDocModalOpen] = useState(false);
+  const [businessDocToReplace, setBusinessDocToReplace] = useState<any | null>(null);
+  const [replaceBusinessDocFile, setReplaceBusinessDocFile] = useState<File | null>(null);
+  const [replaceBusinessDocExpiry, setReplaceBusinessDocExpiry] = useState("");
+  const [replaceBusinessDocNotes, setReplaceBusinessDocNotes] = useState("");
+  const [replaceBusinessDocError, setReplaceBusinessDocError] = useState<string | null>(null);
+
+  // Version History Modal
+  const [historyBusinessDocModalOpen, setHistoryBusinessDocModalOpen] = useState(false);
+  const [businessDocHistoryItem, setBusinessDocHistoryItem] = useState<any | null>(null);
+
+  // Archive Business Document Modal
+  const [archiveBusinessDocModalOpen, setArchiveBusinessDocModalOpen] = useState(false);
+  const [businessDocToArchive, setBusinessDocToArchive] = useState<any | null>(null);
 
   // Search and Filter State for Branches
   const [branchSearch, setBranchSearch] = useState("");
@@ -194,6 +235,202 @@ export default function BusinessPage() {
       default:
         return status;
     }
+  };
+
+  // ----------------------------------------------------
+  // Business Documents Operations
+  // ----------------------------------------------------
+  const handleOpenUploadBusinessDoc = () => {
+    setUploadBusinessDocForm({
+      documentTypeId: "",
+      title: "",
+      referenceNumber: "",
+      issueDate: "",
+      expiryDate: "",
+      notes: "",
+    });
+    setUploadBusinessDocFile(null);
+    setUploadBusinessDocError(null);
+    setUploadBusinessDocModalOpen(true);
+  };
+
+  const handleSelectBusinessDocType = (typeId: string) => {
+    const dt = (data?.documentTypes || []).find((d: any) => d.id === typeId);
+    setUploadBusinessDocForm((prev) => ({
+      ...prev,
+      documentTypeId: typeId,
+      title: prev.title || (dt ? (locale === "ar" ? dt.nameAr : dt.nameEn) : ""),
+    }));
+  };
+
+  const handleSubmitUploadBusinessDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadBusinessDocError(null);
+
+    if (!uploadBusinessDocFile) {
+      setUploadBusinessDocError(
+        locale === "ar"
+          ? "يرجى تحديد ملف PDF للمستند القانوني."
+          : "Please select an authentic PDF document file."
+      );
+      return;
+    }
+
+    if (!uploadBusinessDocFile.name.toLowerCase().endsWith(".pdf")) {
+      setUploadBusinessDocError(
+        locale === "ar"
+          ? "يقبل النظام ملفات PDF الرسمية فقط."
+          : "Only authentic PDF documents are supported."
+      );
+      return;
+    }
+
+    if (!uploadBusinessDocForm.documentTypeId || !uploadBusinessDocForm.title.trim()) {
+      setUploadBusinessDocError(
+        locale === "ar"
+          ? "يرجى اختيار نوع المستند وإدخال العنوان."
+          : "Please select a document type and enter a title."
+      );
+      return;
+    }
+
+    setAuthDialogTitle(t.businessDocs.uploadModalTitle);
+    setAuthDialogDesc(uploadBusinessDocForm.title.trim());
+    setPendingAction(() => async (authPassword: string) => {
+      try {
+        setUploadingBusinessDoc(true);
+        const fd = new FormData();
+        fd.append("file", uploadBusinessDocFile);
+        fd.append("title", uploadBusinessDocForm.title.trim());
+        fd.append("documentTypeId", uploadBusinessDocForm.documentTypeId);
+        fd.append("entityType", "ORGANIZATION");
+        fd.append("entityId", data.organization.id);
+        if (uploadBusinessDocForm.referenceNumber.trim()) {
+          fd.append("referenceNumber", uploadBusinessDocForm.referenceNumber.trim());
+        }
+        if (uploadBusinessDocForm.issueDate) {
+          fd.append("issueDate", uploadBusinessDocForm.issueDate);
+        }
+        if (uploadBusinessDocForm.expiryDate) {
+          fd.append("expiryDate", uploadBusinessDocForm.expiryDate);
+        }
+        if (uploadBusinessDocForm.notes.trim()) {
+          fd.append("notes", uploadBusinessDocForm.notes.trim());
+        }
+        fd.append("authorizationPassword", authPassword);
+
+        const res = await fetch("/api/documents", {
+          method: "POST",
+          body: fd,
+        });
+
+        const resJson = await res.json();
+        if (!res.ok) {
+          throw new Error(resJson.error || "Failed to upload business document");
+        }
+
+        setUploadBusinessDocModalOpen(false);
+        setAuthDialogOpen(false);
+        showToast(t.businessDocs.uploadSuccess);
+        await loadData();
+      } catch (err: any) {
+        setUploadBusinessDocError(err.message || "Upload failed");
+      } finally {
+        setUploadingBusinessDoc(false);
+      }
+    });
+    setAuthDialogOpen(true);
+  };
+
+  const handleOpenReplaceBusinessDoc = (doc: any) => {
+    setBusinessDocToReplace(doc);
+    setReplaceBusinessDocFile(null);
+    setReplaceBusinessDocExpiry(
+      doc.expiryDate ? new Date(doc.expiryDate).toISOString().split("T")[0] : ""
+    );
+    setReplaceBusinessDocNotes("");
+    setReplaceBusinessDocError(null);
+    setReplaceBusinessDocModalOpen(true);
+  };
+
+  const handleSubmitReplaceBusinessDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!businessDocToReplace || !replaceBusinessDocFile) {
+      setReplaceBusinessDocError(
+        locale === "ar"
+          ? "يرجى اختيار ملف PDF الجديد."
+          : "Please select the replacement PDF file."
+      );
+      return;
+    }
+
+    setAuthDialogTitle(t.businessDocs.replaceModalTitle);
+    setAuthDialogDesc(`${t.businessDocs.replaceModalDesc} (${businessDocToReplace.title})`);
+    setPendingAction(() => async (authPassword: string) => {
+      const fd = new FormData();
+      fd.append("file", replaceBusinessDocFile);
+      if (replaceBusinessDocExpiry) {
+        fd.append("expiryDate", replaceBusinessDocExpiry);
+      }
+      if (replaceBusinessDocNotes) {
+        fd.append("notes", replaceBusinessDocNotes);
+      }
+      fd.append("authorizationPassword", authPassword);
+
+      const res = await fetch(`/api/documents/${businessDocToReplace.id}/versions`, {
+        method: "POST",
+        body: fd,
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "Failed to replace document version");
+      }
+
+      setReplaceBusinessDocModalOpen(false);
+      setBusinessDocToReplace(null);
+      setReplaceBusinessDocFile(null);
+      setAuthDialogOpen(false);
+      showToast(t.businessDocs.replaceSuccess);
+      await loadData();
+    });
+    setAuthDialogOpen(true);
+  };
+
+  const handleOpenArchiveBusinessDoc = (doc: any) => {
+    setBusinessDocToArchive(doc);
+    setArchiveBusinessDocModalOpen(true);
+  };
+
+  const handleConfirmArchiveBusinessDoc = () => {
+    if (!businessDocToArchive) return;
+    setAuthDialogTitle(t.businessDocs.archiveConfirmTitle);
+    setAuthDialogDesc(businessDocToArchive.title);
+    setPendingAction(() => async (authPassword: string) => {
+      const res = await fetch(`/api/documents/${businessDocToArchive.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ authorizationPassword: authPassword }),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Failed to archive document");
+      setArchiveBusinessDocModalOpen(false);
+      setBusinessDocToArchive(null);
+      setAuthDialogOpen(false);
+      showToast(t.businessDocs.archiveSuccess);
+      await loadData();
+    });
+    setAuthDialogOpen(true);
+  };
+
+  const handlePreviewBusinessDoc = (doc: any) => {
+    setActiveDoc(doc);
+    setPdfViewerOpen(true);
+  };
+
+  const handleOpenHistoryBusinessDoc = (doc: any) => {
+    setBusinessDocHistoryItem(doc);
+    setHistoryBusinessDocModalOpen(true);
   };
 
   // ----------------------------------------------------
@@ -455,7 +692,36 @@ export default function BusinessPage() {
     );
   }
 
-  const { organization, branches = [], departments = [], legalDocs = [], currentUser } = data;
+  const {
+    organization,
+    branches = [],
+    departments = [],
+    businessDocs = [],
+    businessDocStats = { total: 0, active: 0, expiring: 0, expired: 0, archived: 0 },
+    documentTypes = [],
+    currentUser,
+  } = data;
+
+  // Filter Business Documents by Search, Category, and Status
+  const filteredBusinessDocs = businessDocs.filter((doc: any) => {
+    if (businessDocStatusFilter !== "ALL" && doc.status !== businessDocStatusFilter) {
+      return false;
+    }
+    if (businessDocCategoryFilter !== "ALL" && doc.documentType?.category !== businessDocCategoryFilter) {
+      return false;
+    }
+    if (businessDocSearch.trim()) {
+      const q = businessDocSearch.toLowerCase();
+      const matchTitle = doc.title?.toLowerCase().includes(q);
+      const matchRef = doc.referenceNumber?.toLowerCase().includes(q);
+      const matchTypeEn = doc.documentType?.nameEn?.toLowerCase().includes(q);
+      const matchTypeAr = doc.documentType?.nameAr?.toLowerCase().includes(q);
+      if (!matchTitle && !matchRef && !matchTypeEn && !matchTypeAr) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   // Filter Branches by Search, Status, and Type
   const filteredBranches = branches.filter((b: any) => {
@@ -541,6 +807,271 @@ export default function BusinessPage() {
           <Edit2 className="w-3.5 h-3.5 text-rose-400" />
           <span>{t.business.editProfile}</span>
         </button>
+      </div>
+
+      {/* ================================================== */}
+      {/* BUSINESS DOCUMENTS (CENTRAL LEGAL & REGULATORY) */}
+      {/* ================================================== */}
+      <div className="space-y-4">
+        {/* Header with Title and Upload Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2 rtl:space-x-reverse">
+              <FolderLock className="w-5 h-5 text-rose-500" />
+              <span>{t.businessDocs.title} ({businessDocStats.total})</span>
+            </h2>
+            {businessDocStats.archived > 0 && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-950/40 border border-purple-800/40 text-purple-300">
+                {businessDocStats.archived} {t.businessDocs.archivedDocs}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/business/documents"
+              className="px-3.5 py-2 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+            >
+              <FileText className="w-3.5 h-3.5 text-rose-400" />
+              <span>{t.businessDocs.viewAllDocs}</span>
+            </Link>
+            <button
+              id="upload-business-doc-button"
+              onClick={handleOpenUploadBusinessDoc}
+              className="px-4 py-2 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold flex items-center space-x-2 rtl:space-x-reverse transition shadow-lg shadow-rose-950/40"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t.businessDocs.uploadDocument}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Live Metrics Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+          <div className="bg-[#141720] p-4 rounded-2xl border border-[#1e2433] shadow-md">
+            <div className="text-xl font-bold text-white">{businessDocStats.total}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">{t.businessDocs.totalDocs}</div>
+          </div>
+          <div className="bg-[#141720] p-4 rounded-2xl border border-[#1e2433] shadow-md">
+            <div className="text-xl font-bold text-emerald-400">{businessDocStats.active}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">{t.businessDocs.activeDocs}</div>
+          </div>
+          <div className="bg-[#141720] p-4 rounded-2xl border border-[#1e2433] shadow-md">
+            <div className="text-xl font-bold text-amber-400">{businessDocStats.expiring}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">{t.businessDocs.expiringDocs}</div>
+          </div>
+          <div className="bg-[#141720] p-4 rounded-2xl border border-[#1e2433] shadow-md">
+            <div className="text-xl font-bold text-rose-400">{businessDocStats.expired}</div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">{t.businessDocs.expiredDocs}</div>
+          </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="bg-[#141720] border border-[#1e2433] rounded-2xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-lg">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-500 absolute start-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={businessDocSearch}
+              onChange={(e) => setBusinessDocSearch(e.target.value)}
+              placeholder={t.businessDocs.searchPlaceholder}
+              className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl ps-9 pe-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-rose-500 transition"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter */}
+            <div className="flex items-center bg-[#0c0e12] border border-[#1e2433] rounded-xl p-0.5 text-xs">
+              {[
+                { id: "ALL", label: t.businessDocs.allStatuses },
+                { id: "ACTIVE", label: t.businessDocs.activeDocs },
+                { id: "EXPIRING_SOON", label: t.businessDocs.expiringDocs },
+                { id: "EXPIRED", label: t.businessDocs.expiredDocs },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => setBusinessDocStatusFilter(st.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    businessDocStatusFilter === st.id
+                      ? "bg-rose-600/30 text-rose-300 font-bold border border-rose-500/30"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Category Dropdown */}
+            <select
+              value={businessDocCategoryFilter}
+              onChange={(e) => setBusinessDocCategoryFilter(e.target.value)}
+              className="bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:border-rose-500"
+            >
+              <option value="ALL">{t.businessDocs.allCategories}</option>
+              <option value="Business Legal">{t.businessDocs.categoryLegal}</option>
+              <option value="Contracts">{t.businessDocs.categoryContracts}</option>
+              <option value="Compliance">{t.businessDocs.categoryCompliance}</option>
+              <option value="Tax">{t.businessDocs.categoryTax}</option>
+              <option value="Other">{t.businessDocs.categoryOther}</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Business Document Cards Grid or Empty State */}
+        {businessDocs.length === 0 ? (
+          <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-12 text-center text-slate-400 space-y-4 shadow-xl">
+            <div className="w-16 h-16 rounded-3xl bg-[#0c0e12] border border-[#1e2433] text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+              <FolderLock className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-white">{t.businessDocs.emptyTitle}</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">{t.businessDocs.emptyDesc}</p>
+            </div>
+            <button
+              onClick={handleOpenUploadBusinessDoc}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-950/40"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{t.businessDocs.uploadFirstDocument}</span>
+            </button>
+          </div>
+        ) : filteredBusinessDocs.length === 0 ? (
+          <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-10 text-center text-slate-400 space-y-3 shadow-xl">
+            <Search className="w-10 h-10 mx-auto text-slate-600" />
+            <p className="text-xs font-semibold">{locale === "ar" ? "لا توجد مستندات تطابق معايير البحث والفلترة" : "No documents match search criteria"}</p>
+            <button
+              onClick={() => {
+                setBusinessDocSearch("");
+                setBusinessDocCategoryFilter("ALL");
+                setBusinessDocStatusFilter("ALL");
+              }}
+              className="px-4 py-1.5 bg-[#0c0e12] border border-[#1e2433] hover:border-slate-700 text-xs text-slate-300 rounded-xl"
+            >
+              {locale === "ar" ? "إعادة تعيين الفلاتر" : "Reset Filters"}
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBusinessDocs.map((doc: any) => {
+              const currentVer = doc.currentVersion;
+              return (
+                <div
+                  key={doc.id}
+                  className="p-5 bg-[#141720] border border-[#1e2433] rounded-3xl space-y-4 hover:border-rose-900/40 transition shadow-xl flex flex-col justify-between"
+                >
+                  <div className="space-y-3">
+                    {/* Badges row */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#0c0e12] text-rose-400 font-semibold border border-[#1e2433]">
+                        {locale === "ar" ? doc.documentType?.nameAr || doc.documentType?.nameEn : doc.documentType?.nameEn}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                            doc.status === "ACTIVE"
+                              ? "bg-emerald-950/60 border-emerald-800/60 text-emerald-400"
+                              : doc.status === "EXPIRING_SOON"
+                              ? "bg-amber-950/60 border-amber-800/60 text-amber-400"
+                              : doc.status === "ARCHIVED"
+                              ? "bg-purple-950/60 border-purple-800/60 text-purple-400"
+                              : "bg-rose-950/60 border-rose-800/60 text-rose-400"
+                          }`}
+                        >
+                          {tStatus(doc.status)}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-slate-900 text-slate-400 border border-slate-800 font-bold">
+                          v{currentVer?.versionNumber || 1}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Title & Ref */}
+                    <div>
+                      <h4 className="text-sm font-bold text-white tracking-tight line-clamp-1">
+                        {doc.title}
+                      </h4>
+                      {doc.referenceNumber && (
+                        <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                          {doc.referenceNumber}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-2 text-[11px] bg-[#0c0e12] p-2.5 rounded-xl border border-[#1e2433]">
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">{t.businessDocs.issueDate}</span>
+                        <span className="text-slate-300 font-medium font-mono">
+                          {doc.issueDate ? new Date(doc.issueDate).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB") : "-"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[10px]">{t.businessDocs.expiryDate}</span>
+                        <span className={`font-medium font-mono ${doc.status === "EXPIRED" ? "text-rose-400" : doc.status === "EXPIRING_SOON" ? "text-amber-400" : "text-emerald-400"}`}>
+                          {doc.expiryDate ? new Date(doc.expiryDate).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB") : (locale === "ar" ? "دائم" : "Perpetual")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Upload info */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                      <span>{t.businessDocs.uploadedBy}: {doc.createdBy || (locale === "ar" ? "المالك" : "Owner")}</span>
+                      {currentVer?.sizeBytes && (
+                        <span className="font-mono">{(currentVer.sizeBytes / 1024).toFixed(0)} KB</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-3 border-t border-[#1e2433] flex items-center justify-between gap-1.5">
+                    <button
+                      onClick={() => handlePreviewBusinessDoc(doc)}
+                      className="flex-1 py-1.5 px-2 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 text-rose-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition"
+                      title={t.businessDocs.preview}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{t.businessDocs.preview}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenHistoryBusinessDoc(doc)}
+                      className="p-1.5 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] text-slate-300 rounded-xl transition"
+                      title={t.businessDocs.history}
+                    >
+                      <History className="w-3.5 h-3.5" />
+                    </button>
+
+                    <a
+                      href={`/api/documents/${doc.id}/download`}
+                      download
+                      className="p-1.5 bg-[#0c0e12] hover:bg-slate-800 border border-[#1e2433] text-slate-300 rounded-xl transition"
+                      title={t.businessDocs.download}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+
+                    <button
+                      onClick={() => handleOpenReplaceBusinessDoc(doc)}
+                      className="p-1.5 bg-[#0c0e12] hover:bg-amber-950/40 border border-[#1e2433] hover:border-amber-800/50 text-amber-400 rounded-xl transition"
+                      title={t.businessDocs.replace}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleOpenArchiveBusinessDoc(doc)}
+                      className="p-1.5 bg-[#0c0e12] hover:bg-purple-950/40 border border-[#1e2433] hover:border-purple-800/50 text-purple-400 rounded-xl transition"
+                      title={t.businessDocs.archive}
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ================================================== */}
@@ -861,62 +1392,6 @@ export default function BusinessPage() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Official Legal Documents & Permits Checklist */}
-      <div className="space-y-4">
-        <h2 className="text-base font-bold text-white flex items-center space-x-2 rtl:space-x-reverse">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span>{t.business.licensesAndPermits} ({legalDocs.length})</span>
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {legalDocs.map((doc: any) => (
-            <div
-              key={doc.id}
-              className="p-5 bg-[#141720] border border-[#1e2433] rounded-3xl flex items-center justify-between gap-3 hover:border-slate-700 transition"
-            >
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-900 text-rose-400 font-semibold border border-slate-800">
-                    {locale === "ar" ? doc.documentType?.nameAr || doc.documentType?.nameEn : doc.documentType?.nameEn}
-                  </span>
-                  <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                      doc.status === "ACTIVE"
-                        ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
-                        : "bg-rose-950/40 text-rose-400 border-rose-800/40"
-                    }`}
-                  >
-                    {tStatus(doc.status)}
-                  </span>
-                </div>
-                <h3 className="text-xs font-bold text-white truncate max-w-sm">
-                  {doc.title}
-                </h3>
-                <div className="text-[11px] text-slate-400 font-mono">
-                  Ref: {doc.referenceNumber || "N/A"}
-                  {doc.expiryDate && (
-                    <span className="ms-3 text-amber-400 font-sans">
-                      {t.pdfViewer.expires} {new Date(doc.expiryDate).toLocaleDateString(locale === "ar" ? "ar-AE" : "en-GB")}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setActiveDoc(doc);
-                  setPdfViewerOpen(true);
-                }}
-                className="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center space-x-1.5 rtl:space-x-reverse transition flex-shrink-0"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>{t.business.previewPdf}</span>
-              </button>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* ================================================== */}
@@ -1601,6 +2076,457 @@ export default function BusinessPage() {
                 className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-rose-950/40"
               >
                 {t.auth.confirmAndExecute}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================== */}
+      {/* Upload Business Document Modal */}
+      {/* ================================================== */}
+      {uploadBusinessDocModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-6 sm:p-7 max-w-xl w-full space-y-5 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-[#1e2433] pb-4">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="w-10 h-10 rounded-2xl bg-rose-950/60 border border-rose-800/40 text-rose-400 flex items-center justify-center shadow-lg">
+                  <FolderLock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">{t.businessDocs.uploadModalTitle}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{t.businessDocs.uploadModalDesc}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setUploadBusinessDocModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {uploadBusinessDocError && (
+              <div className="p-3.5 bg-rose-950/50 border border-rose-800/50 text-rose-300 rounded-2xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{uploadBusinessDocError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitUploadBusinessDoc} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.docType} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  required
+                  value={uploadBusinessDocForm.documentTypeId}
+                  onChange={(e) => handleSelectBusinessDocType(e.target.value)}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                >
+                  <option value="">{t.businessDocs.selectDocType}</option>
+                  {(data?.documentTypes || []).map((dt: any) => (
+                    <option key={dt.id} value={dt.id}>
+                      [{dt.category}] {locale === "ar" ? dt.nameAr || dt.nameEn : dt.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.docTitle} <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={uploadBusinessDocForm.title}
+                  onChange={(e) =>
+                    setUploadBusinessDocForm({ ...uploadBusinessDocForm, title: e.target.value })
+                  }
+                  placeholder={t.businessDocs.docTitlePlaceholder}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.referenceNumber}
+                </label>
+                <input
+                  type="text"
+                  value={uploadBusinessDocForm.referenceNumber}
+                  onChange={(e) =>
+                    setUploadBusinessDocForm({
+                      ...uploadBusinessDocForm,
+                      referenceNumber: e.target.value,
+                    })
+                  }
+                  placeholder={t.businessDocs.referencePlaceholder}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {t.businessDocs.issueDate}
+                  </label>
+                  <input
+                    type="date"
+                    value={uploadBusinessDocForm.issueDate}
+                    onChange={(e) =>
+                      setUploadBusinessDocForm({
+                        ...uploadBusinessDocForm,
+                        issueDate: e.target.value,
+                      })
+                    }
+                    className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {t.businessDocs.expiryDate}
+                  </label>
+                  <input
+                    type="date"
+                    value={uploadBusinessDocForm.expiryDate}
+                    onChange={(e) =>
+                      setUploadBusinessDocForm({
+                        ...uploadBusinessDocForm,
+                        expiryDate: e.target.value,
+                      })
+                    }
+                    className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.pdfFile} <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative border-2 border-dashed border-[#1e2433] hover:border-rose-500/60 rounded-2xl p-4 text-center transition bg-[#0c0e12]/60">
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      if (file && !file.name.toLowerCase().endsWith(".pdf")) {
+                        setUploadBusinessDocError(
+                          locale === "ar"
+                            ? "يقبل النظام ملفات PDF الرسمية فقط."
+                            : "Only authentic PDF documents are supported."
+                        );
+                        setUploadBusinessDocFile(null);
+                        return;
+                      }
+                      setUploadBusinessDocError(null);
+                      setUploadBusinessDocFile(file);
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="space-y-1.5 pointer-events-none">
+                    <FileText className="w-7 h-7 mx-auto text-rose-500" />
+                    {uploadBusinessDocFile ? (
+                      <div className="text-xs font-mono text-emerald-400">
+                        {uploadBusinessDocFile.name} ({(uploadBusinessDocFile.size / 1024).toFixed(0)} KB)
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs font-semibold text-slate-300">
+                          {locale === "ar" ? "اضغط لاختيار ملف PDF أو اسحبه إلى هنا" : "Click to select or drag & drop PDF file"}
+                        </p>
+                        <p className="text-[10px] text-slate-500">{t.businessDocs.pdfHint}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">{t.businessDocs.notes}</label>
+                <textarea
+                  rows={2}
+                  value={uploadBusinessDocForm.notes}
+                  onChange={(e) =>
+                    setUploadBusinessDocForm({ ...uploadBusinessDocForm, notes: e.target.value })
+                  }
+                  placeholder={t.businessDocs.notesPlaceholder}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#1e2433] flex items-center justify-end space-x-3 rtl:space-x-reverse">
+                <button
+                  type="button"
+                  onClick={() => setUploadBusinessDocModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-semibold"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingBusinessDoc}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-semibold shadow-lg shadow-rose-950/40 flex items-center gap-1.5"
+                >
+                  {uploadingBusinessDoc ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  <span>{t.businessDocs.uploadDocument}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================== */}
+      {/* Replace Business Document Modal */}
+      {/* ================================================== */}
+      {replaceBusinessDocModalOpen && businessDocToReplace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-5 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-[#1e2433] pb-4">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="w-10 h-10 rounded-2xl bg-amber-950/60 border border-amber-800/40 text-amber-400 flex items-center justify-center shadow-lg">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">{t.businessDocs.replaceModalTitle}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{businessDocToReplace.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReplaceBusinessDocModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {replaceBusinessDocError && (
+              <div className="p-3.5 bg-rose-950/50 border border-rose-800/50 text-rose-300 rounded-2xl text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{replaceBusinessDocError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitReplaceBusinessDoc} className="space-y-4 text-xs">
+              <div className="p-3 bg-[#0c0e12] rounded-xl border border-[#1e2433] flex items-center justify-between">
+                <span className="text-slate-400">{t.businessDocs.currentVersion}:</span>
+                <span className="font-mono font-bold text-emerald-400">
+                  v{businessDocToReplace.currentVersion?.versionNumber || 1}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.pdfFile} <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative border-2 border-dashed border-[#1e2433] hover:border-amber-500/60 rounded-2xl p-4 text-center transition bg-[#0c0e12]/60">
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      if (file && !file.name.toLowerCase().endsWith(".pdf")) {
+                        setReplaceBusinessDocError(
+                          locale === "ar"
+                            ? "يقبل النظام ملفات PDF الرسمية فقط."
+                            : "Only authentic PDF documents are supported."
+                        );
+                        setReplaceBusinessDocFile(null);
+                        return;
+                      }
+                      setReplaceBusinessDocError(null);
+                      setReplaceBusinessDocFile(file);
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div className="space-y-1.5 pointer-events-none">
+                    <Upload className="w-7 h-7 mx-auto text-amber-500" />
+                    {replaceBusinessDocFile ? (
+                      <div className="text-xs font-mono text-emerald-400">
+                        {replaceBusinessDocFile.name} ({(replaceBusinessDocFile.size / 1024).toFixed(0)} KB)
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs font-semibold text-slate-300">
+                          {locale === "ar" ? "اضغط لاختيار ملف PDF البديل" : "Click to select replacement PDF file"}
+                        </p>
+                        <p className="text-[10px] text-slate-500">{t.businessDocs.pdfHint}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {t.businessDocs.expiryDate}
+                </label>
+                <input
+                  type="date"
+                  value={replaceBusinessDocExpiry}
+                  onChange={(e) => setReplaceBusinessDocExpiry(e.target.value)}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">{t.businessDocs.notes}</label>
+                <textarea
+                  rows={2}
+                  value={replaceBusinessDocNotes}
+                  onChange={(e) => setReplaceBusinessDocNotes(e.target.value)}
+                  placeholder={locale === "ar" ? "سبب استبدال المستند وتحديث الإصدار..." : "Reason for replacing document..."}
+                  className="w-full bg-[#0c0e12] border border-[#1e2433] rounded-xl px-3 py-2 text-white outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-[#1e2433] flex items-center justify-end space-x-3 rtl:space-x-reverse">
+                <button
+                  type="button"
+                  onClick={() => setReplaceBusinessDocModalOpen(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-semibold"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-semibold shadow-lg shadow-amber-950/40 flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>{t.businessDocs.replace}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================== */}
+      {/* Version History Modal */}
+      {/* ================================================== */}
+      {historyBusinessDocModalOpen && businessDocHistoryItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-[#141720] border border-[#1e2433] rounded-3xl p-6 sm:p-7 max-w-xl w-full space-y-5 shadow-2xl my-8">
+            <div className="flex items-center justify-between border-b border-[#1e2433] pb-4">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                <div className="w-10 h-10 rounded-2xl bg-teal-950/60 border border-teal-800/40 text-teal-400 flex items-center justify-center shadow-lg">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">{t.businessDocs.versionHistoryTitle}</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{businessDocHistoryItem.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHistoryBusinessDocModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pe-1">
+              {(businessDocHistoryItem.versions || []).map((ver: any, idx: number) => {
+                const isCurrent = ver.id === businessDocHistoryItem.currentVersionId;
+                return (
+                  <div
+                    key={ver.id || idx}
+                    className={`p-4 rounded-2xl border ${
+                      isCurrent
+                        ? "bg-slate-900/80 border-emerald-800/50 shadow-md"
+                        : "bg-[#0c0e12] border-[#1e2433]"
+                    } space-y-2`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-white text-xs">
+                          v{ver.versionNumber}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[10px] bg-emerald-950/70 border border-emerald-800/60 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">
+                            {t.businessDocs.currentVersion}
+                          </span>
+                        )}
+                      </div>
+                      <a
+                        href={`/api/documents/${businessDocHistoryItem.id}/download?versionId=${ver.id}`}
+                        download
+                        className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                      >
+                        <Download className="w-3.5 h-3.5 text-rose-400" />
+                        <span>{t.businessDocs.download}</span>
+                      </a>
+                    </div>
+
+                    <div className="text-xs text-slate-300 font-mono break-all">
+                      {ver.originalFilename}
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-[#1e2433]">
+                      <span>{t.businessDocs.uploadedBy}: {ver.uploadedBy || (locale === "ar" ? "المالك" : "Owner")}</span>
+                      <span>{new Date(ver.createdAt).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB")}</span>
+                    </div>
+
+                    {ver.notes && (
+                      <p className="text-[11px] text-slate-400 italic bg-[#141720] p-2 rounded-xl border border-[#1e2433]">
+                        {ver.notes}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-[#1e2433] flex justify-end">
+              <button
+                onClick={() => setHistoryBusinessDocModalOpen(false)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold"
+              >
+                {t.common.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================== */}
+      {/* Archive Business Document Modal */}
+      {/* ================================================== */}
+      {archiveBusinessDocModalOpen && businessDocToArchive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#141720] border border-purple-900/40 rounded-3xl p-6 sm:p-7 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-purple-950/60 border border-purple-800/40 text-purple-400 flex items-center justify-center mx-auto">
+              <Archive className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1">
+              <h3 className="text-base font-bold text-white">{t.businessDocs.archiveConfirmTitle}</h3>
+              <p className="text-xs text-slate-400">{t.businessDocs.archiveConfirmDesc}</p>
+              <p className="text-xs font-mono font-bold text-purple-300 pt-2">
+                {businessDocToArchive.title}
+              </p>
+            </div>
+            <div className="pt-3 border-t border-[#1e2433] flex items-center justify-center gap-3">
+              <button
+                onClick={() => setArchiveBusinessDocModalOpen(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition"
+              >
+                {t.common.cancel}
+              </button>
+              <button
+                onClick={handleConfirmArchiveBusinessDoc}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-purple-950/40"
+              >
+                {t.businessDocs.archive}
               </button>
             </div>
           </div>

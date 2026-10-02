@@ -112,7 +112,7 @@ export async function writeAuditLog(params: WriteAuditParams) {
       success: params.success ?? true,
       reason: params.reason,
       changesBefore: params.changesBefore || undefined,
-      changesAfter: params.changesAfter || undefined,
+      changesAfter: cleanChangesAfter || undefined,
       changedFields: params.changedFields ? JSON.stringify(params.changedFields) : undefined,
       metadata: params.metadata || undefined,
       previousHash: chainHead.currentHash,
@@ -169,7 +169,32 @@ export async function verifyAuditChain(organizationId: string): Promise<{
       changesAfter: log.changesAfter || null,
     };
 
-    const calculated = computeAuditHash(expectedPrevHash, payload);
+    let calculated = computeAuditHash(expectedPrevHash, payload);
+    if (calculated !== log.hash && log.changesAfter && typeof log.changesAfter === "object") {
+      const stringifyNumbers = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(stringifyNumbers);
+        if (obj !== null && typeof obj === "object") {
+          const res: any = {};
+          for (const [k, v] of Object.entries(obj)) {
+            if (typeof v === "number") res[k] = String(v);
+            else if (typeof v === "object") res[k] = stringifyNumbers(v);
+            else res[k] = v;
+          }
+          return res;
+        }
+        return obj;
+      };
+
+      const altPayload = {
+        ...payload,
+        changesAfter: stringifyNumbers(log.changesAfter),
+      };
+      const altCalc = computeAuditHash(expectedPrevHash, altPayload);
+      if (altCalc === log.hash) {
+        calculated = altCalc;
+      }
+    }
+
     if (calculated !== log.hash) {
       return {
         valid: false,

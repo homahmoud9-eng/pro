@@ -67,7 +67,10 @@ export async function GET(
       actorUserId: actor.id,
       actorNameSnapshot: actor.name,
       actorEmailSnapshot: actor.email,
-      action: "DOWNLOAD_DOCUMENT",
+      action:
+        doc.entityType === "ORGANIZATION"
+          ? "BUSINESS_DOCUMENT_DOWNLOADED"
+          : "DOWNLOAD_DOCUMENT",
       module: "document",
       entityType: "DOCUMENT",
       entityId: doc.id,
