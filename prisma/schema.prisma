@@ -56,6 +56,11 @@ model Organization {
   foodSafetyChecklists   FoodSafetyChecklist[]
   foodSafetyInspections  FoodSafetyInspection[]
   foodHandlerTrainings   FoodHandlerTraining[]
+  regulatoryRequirements RegulatoryRequirement[]
+  complianceRecords      ComplianceRecord[]
+  correctiveActions      CorrectiveAction[]
+  foodSafetyLogs         FoodSafetyLog[]
+  traceabilityRecords    TraceabilityRecord[]
   leaveTypes             LeaveType[]
   leaveRequests          LeaveRequest[]
   leaveBalances          LeaveBalance[]
@@ -99,6 +104,12 @@ model Branch {
   expenses              Expense[]
   payments              Payment[]
   foodSafetyInspections FoodSafetyInspection[]
+  foodSafetyFindings    FoodSafetyFinding[]
+  foodHandlerTrainings  FoodHandlerTraining[]
+  complianceRecords     ComplianceRecord[]
+  correctiveActions     CorrectiveAction[]
+  foodSafetyLogs        FoodSafetyLog[]
+  traceabilityRecords   TraceabilityRecord[]
   attendanceRecords     AttendanceRecord[]
   auditLogs             AuditLog[]
   notifications         Notification[]
@@ -276,7 +287,8 @@ model DocumentType {
   updatedAt              DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  documents    Document[]
+  documents              Document[]
+  regulatoryRequirements RegulatoryRequirement[]
 
   @@unique([organizationId, nameEn])
 }
@@ -970,27 +982,105 @@ model TaxRecord {
 }
 
 // ----------------------------------------------------
-// 9. Compliance: Food Safety & Inspection (ADAFSA-Ready)
+// 9. Compliance: ADAFSA Food Safety & Regulatory Inspection
 // ----------------------------------------------------
+
+model RegulatoryRequirement {
+  id               String   @id @default(uuid())
+  organizationId   String
+  code             String   // e.g. "ADAFSA-FS-01", "ADAFSA-EFST-01", "ADAFSA-TEMP-01", etc.
+  authority        String   @default("ADAFSA") // ADAFSA, MOHRE, CIVIL_DEFENSE, DED_ABU_DHABI
+  category         String   // FOOD_SAFETY, EFST_TRAINING, PREMISES_HYGIENE, TEMPERATURE_CONTROL, PEST_CONTROL, TRACEABILITY_RECALL, HACCP, LICENSING
+  titleAr          String
+  titleEn          String
+  descriptionAr    String?
+  descriptionEn    String?
+  sourceReference  String   // e.g. "ADAFSA Food Safety Regulation No. 6/2020", "Code of Practice No. 1/2012"
+  sourceUrl        String?
+  scope            String   @default("ALL") // BUSINESS, BRANCH, EMPLOYEE, ALL
+  frequency        String   @default("CONTINUOUS") // CONTINUOUS, DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUAL
+  evidenceRequired Boolean  @default(true)
+  documentTypeId   String?
+  status           String   @default("ACTIVE") // ACTIVE, UNDER_REVIEW, RETIRED
+  versionNumber    Int      @default(1)
+  effectiveDate    DateTime?
+  reviewDate       DateTime?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization      Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documentType      DocumentType?                 @relation(fields: [documentTypeId], references: [id], onDelete: SetNull)
+  complianceRecords ComplianceRecord[]
+  versions          RegulatoryRequirementVersion[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId, authority, category])
+}
+
+model RegulatoryRequirementVersion {
+  id            String   @id @default(uuid())
+  requirementId String
+  versionNumber Int
+  effectiveDate DateTime
+  reviewDate    DateTime?
+  changeNotes   String
+  sourceRef     String?
+  createdAt     DateTime @default(now())
+
+  requirement RegulatoryRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, versionNumber])
+}
+
+model ComplianceRecord {
+  id                 String    @id @default(uuid())
+  organizationId     String
+  branchId           String?
+  requirementId      String
+  status             String    @default("PENDING") // COMPLIANT, PENDING_EVIDENCE, NON_COMPLIANT, UNDER_REVIEW, NOT_APPLICABLE
+  lastVerifiedAt     DateTime?
+  verifiedBy         String?
+  nextReviewDate     DateTime?
+  evidenceDocumentId String?
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  requirement  RegulatoryRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, branchId, status])
+}
 
 model FoodHandlerTraining {
   id                    String    @id @default(uuid())
   organizationId        String
+  branchId              String?
   employeeId            String
   program               String    @default("EFST") // EFST (Essential Food Safety Training), HACCP, ADVANCED
+  trainingType          String    @default("EFST") // EFST, HACCP, FOOD_HYGIENE, ALLERGEN
+  trainingCategory      String    @default("EFST_FOOD_HANDLERS") // EFST_FOOD_HANDLERS, EFST_SUPERVISORS, HACCP_LEVEL_2, HACCP_LEVEL_3
   provider              String?   // "ADAFSA Approved Center"
   certificateNumber     String?
+  certificateDocumentId String?
+  certificateStorageKey String?
+  score                 Decimal?  @db.Decimal(5, 2)
   trainingDate          DateTime
   expiryDate            DateTime?
-  status                String    @default("ACTIVE") // ACTIVE, EXPIRING_SOON, EXPIRED
+  status                String    @default("REQUIRED") // REQUIRED, SCHEDULED, COMPLETED, EXPIRING, EXPIRED, NOT_APPLICABLE
+  verificationStatus    String    @default("VERIFIED") // PENDING, VERIFIED, EXPIRED
   notes                 String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
   employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
-  @@index([organizationId, status])
+  @@index([organizationId, branchId, status])
+  @@index([employeeId, program])
 }
 
 model FoodSafetyChecklist {
@@ -1008,29 +1098,39 @@ model FoodSafetyChecklist {
 }
 
 model FoodSafetyInspection {
-  id             String   @id @default(uuid())
-  organizationId String
-  branchId       String?
-  checklistId    String
-  inspectionDate DateTime @default(now())
-  inspectorName  String
-  score          Decimal  @default(100) @db.Decimal(5, 2)
-  status         String   @default("PASSED") // PASSED, NEEDS_ACTION, FAILED
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String    @id @default(uuid())
+  organizationId   String
+  branchId         String?
+  checklistId      String?
+  authority        String    @default("ADAFSA") // ADAFSA, INTERNAL_AUDIT, THIRD_PARTY, CIVIL_DEFENSE
+  inspectionType   String    @default("OFFICIAL_ADAFSA") // OFFICIAL_ADAFSA, ROUTINE, COMPLAINT_BASED, RE_INSPECTION, INTERNAL_AUDIT
+  referenceNumber  String?   // Official Inspection Notice #
+  inspectionDate   DateTime  @default(now())
+  inspectorName    String
+  score            Decimal   @default(100) @db.Decimal(5, 2)
+  overallResult    String    @default("SATISFACTORY") // SATISFACTORY, NEEDS_ACTION, CRITICAL_ISSUES, PENDING_CLOSURE
+  status           String    @default("SCHEDULED")    // SCHEDULED, IN_PROGRESS, COMPLETED, FOLLOW_UP_REQUIRED, CLOSED
+  closureDate      DateTime?
+  reportDocumentId String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branch       Branch?             @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  checklist    FoodSafetyChecklist @relation(fields: [checklistId], references: [id], onDelete: Restrict)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  checklist    FoodSafetyChecklist? @relation(fields: [checklistId], references: [id], onDelete: SetNull)
   findings     FoodSafetyFinding[]
 
-  @@index([organizationId, inspectionDate])
+  @@index([organizationId, branchId, inspectionDate])
+  @@index([organizationId, authority, status])
 }
 
 model FoodSafetyFinding {
   id               String    @id @default(uuid())
   inspectionId     String
+  branchId         String?
+  findingNumber    String?
+  category         String?   // Temperature, Cross-contamination, Personal Hygiene, Pest Control, Cleaning, Documentation
   section          String
   question         String
   severity         String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
@@ -1044,9 +1144,84 @@ model FoodSafetyFinding {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  inspection FoodSafetyInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  inspection        FoodSafetyInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  branch            Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  correctiveActions CorrectiveAction[]
 
   @@index([inspectionId, status])
+  @@index([branchId, status])
+}
+
+model CorrectiveAction {
+  id                 String    @id @default(uuid())
+  organizationId     String
+  branchId           String?
+  findingId          String?
+  title              String
+  description        String
+  severity           String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  actionRequired     String
+  assignedTo         String?
+  dueDate            DateTime
+  status             String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED, OVERDUE
+  resolutionNotes    String?
+  evidenceDocumentId String?
+  resolvedAt         DateTime?
+  closedAt           DateTime?
+  closedBy           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?            @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  finding      FoodSafetyFinding? @relation(fields: [findingId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, branchId, status])
+}
+
+model FoodSafetyLog {
+  id               String   @id @default(uuid())
+  organizationId   String
+  branchId         String?
+  logType          String   // TEMPERATURE, RECEIVING, CLEANING, PEST_CONTROL, SANITATION
+  controlPoint     String   // e.g. "Walk-in Chiller", "Line Hot Holding Unit", "Meat Delivery Temperature", "Fryer Oil QA"
+  parameter        String   // e.g. "Temperature (°C)", "Chlorine Sanitizer (ppm)", "Cold Chain Integrity"
+  measuredValue    String   // e.g. "2.4 °C", "150 ppm"
+  targetRange      String?  // e.g. "1.0°C - 4.0°C"
+  isCompliant      Boolean  @default(true)
+  correctiveAction String?
+  recordedBy       String
+  recordedAt       DateTime @default(now())
+  notes            String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, branchId, logType, recordedAt])
+}
+
+model TraceabilityRecord {
+  id               String    @id @default(uuid())
+  organizationId   String
+  branchId         String?
+  batchLotNumber   String
+  productName      String
+  supplierName     String
+  receivedDate     DateTime  @default(now())
+  expiryDate       DateTime?
+  quantityReceived Decimal?  @db.Decimal(10, 2)
+  storageLocation  String?
+  status           String    @default("ACTIVE") // ACTIVE, CONSUMED, EXPIRED, QUARANTINED, RECALLED
+  recallStatus     String    @default("NONE")   // NONE, FLAGGED, RECALLED, DESTROYED
+  recallNoticeRef  String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, branchId, batchLotNumber])
 }
 
 // ----------------------------------------------------

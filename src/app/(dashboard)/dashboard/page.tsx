@@ -398,8 +398,8 @@ export default function DashboardPage() {
 
       {/* Secondary Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Compliance & Food Safety Status Panel */}
-        <div className="lg:col-span-5 bg-[#141720] border border-[#1e2433] rounded-3xl p-6 flex flex-col justify-between">
+        {/* Compliance & Regulatory (ADAFSA Official Compliance Panel) */}
+        <div className="lg:col-span-5 bg-[#141720] border border-[#1e2433] rounded-3xl p-6 flex flex-col justify-between shadow-xl">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2.5 rtl:space-x-reverse">
@@ -408,10 +408,10 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">
-                    {locale === "ar" ? "رقابة أدافسيا والامتثال الرسمي" : "ADAFSA & Official Compliance"}
+                    {locale === "ar" ? "الامتثال والرقابة الرسمية" : "Compliance & Regulatory"}
                   </h3>
-                  <p className="text-xs text-slate-400">
-                    {locale === "ar" ? "السلامة الغذائية والوضع القانوني في أبوظبي" : "Abu Dhabi Food Safety & Legal Status"}
+                  <p className="text-[11px] text-slate-400">
+                    ADAFSA • Food Safety • Regulatory
                   </p>
                 </div>
               </div>
@@ -419,73 +419,84 @@ export default function DashboardPage() {
                 href="/compliance"
                 className="text-xs text-rose-400 hover:text-rose-300 font-medium flex items-center space-x-1 rtl:space-x-reverse"
               >
-                <span>{locale === "ar" ? "مركز الامتثال" : "View Center"}</span>
+                <span>{locale === "ar" ? "مركز الامتثال" : "Compliance Center"}</span>
                 <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
 
-            <div className="space-y-3 mt-4">
-              <div className="bg-[#0c0e12] border border-[#1e2433] p-3.5 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                  <span className="text-xs font-semibold text-white">
-                    {locale === "ar" ? "الرخصة التجارية للشركة" : "Commercial Trade License"}
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-emerald-400">
-                  {locale === "ar" ? "سارية (2027)" : "Active (2027)"}
+            {/* Live Database Aggregates - Section 29 */}
+            <div className="grid grid-cols-2 gap-2.5 mt-4">
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between">
+                <span className="text-xs text-slate-300">
+                  {locale === "ar" ? "متطلبات سارية" : "Active Requirements"}
+                </span>
+                <span className="text-sm font-bold font-mono text-emerald-400">
+                  {metrics.complianceStats?.activeRequirements || 0}
                 </span>
               </div>
 
-              <div className="bg-[#0c0e12] border border-[#1e2433] p-3.5 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span className="text-xs font-semibold text-white">
-                    {locale === "ar" ? "عقد الإيجار وتوثيق" : "Tawtheeq Tenancy Contract"}
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-amber-400">
-                  {locale === "ar" ? "ينتهي خلال 22 يوماً" : "Expires in 22 Days"}
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between">
+                <span className="text-xs text-slate-300">
+                  {locale === "ar" ? "مستندات منتهية" : "Expired Documents"}
+                </span>
+                <span className="text-sm font-bold font-mono text-rose-400">
+                  {metrics.complianceStats?.expiredDocs ?? metrics.expiredDocs ?? 0}
                 </span>
               </div>
 
-              <div className="bg-[#0c0e12] border border-[#1e2433] p-3.5 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  <span className="text-xs font-semibold text-white">
-                    {locale === "ar" ? "شهادة الدفاع المدني والسلامة" : "Civil Defense Certificate"}
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-rose-400">
-                  {locale === "ar" ? "منتهية منذ 5 أيام" : "Expired 5 Days Ago"}
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between">
+                <span className="text-xs text-slate-300">
+                  {locale === "ar" ? "إجراءات مفتوحة" : "Open Actions"}
+                </span>
+                <span className="text-sm font-bold font-mono text-amber-400">
+                  {metrics.complianceStats?.openCorrectiveActions || 0}
                 </span>
               </div>
 
-              <div className="bg-[#0c0e12] border border-[#1e2433] p-3.5 rounded-2xl flex items-center justify-between">
-                <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                  <span className="text-xs font-semibold text-white">
-                    {locale === "ar" ? "شهادات تدريب متداولي الغذاء EFST" : "Food Handlers EFST Certified"}
-                  </span>
-                </div>
-                <span className="text-xs font-mono text-blue-400">
-                  {locale === "ar" ? "100% نسبة الالتزام" : "100% Compliant"}
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between">
+                <span className="text-xs text-slate-300">
+                  {locale === "ar" ? "تفتيشات قادمة" : "Upcoming Inspections"}
+                </span>
+                <span className="text-sm font-bold font-mono text-cyan-400">
+                  {metrics.complianceStats?.upcomingInspections || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Additional database-driven operational indicators */}
+            <div className="space-y-2 mt-3">
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-slate-400">
+                  {locale === "ar" ? "تغطية تدريب متداولي الغذاء (EFST)" : "EFST Food Handlers Coverage"}
+                </span>
+                <span className="font-mono font-semibold text-white">
+                  {metrics.complianceStats?.efstCoveragePercent !== null && metrics.complianceStats?.efstCoveragePercent !== undefined
+                    ? `${metrics.complianceStats.efstCoveragePercent}%`
+                    : locale === "ar" ? "لا توجد بيانات بعد" : "No records yet"}
+                </span>
+              </div>
+
+              <div className="bg-[#0c0e12] border border-[#1e2433] p-3 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-slate-400">
+                  {locale === "ar" ? "ملاحظات التفتيش المفتوحة" : "Open Inspection Findings"}
+                </span>
+                <span className="font-mono font-semibold text-rose-400">
+                  {metrics.complianceStats?.openFindings ?? metrics.openFindings ?? 0}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-[#1e2433] flex items-center justify-between text-xs text-slate-400">
+          <div className="mt-5 pt-3 border-t border-[#1e2433] flex items-center justify-between text-xs text-slate-400">
             <span>
-              {locale === "ar" ? "الملاحظات المفتوحة:" : "Open Findings:"}{" "}
-              <strong className="text-rose-400 font-mono">{metrics.openFindings}</strong>
+              {locale === "ar" ? "الجهة الرقابية الأساسية: أدافسيا" : "Primary Authority: ADAFSA"}
             </span>
-            <span>
-              {locale === "ar" ? "قيمة المخزون:" : "Inventory Value:"}{" "}
-              <strong className="text-white font-mono">
-                {Number(metrics.inventoryValue || 0).toLocaleString()} {metrics.currency || t.common.currency}
-              </strong>
-            </span>
+            <Link
+              href="/compliance"
+              className="text-xs text-rose-400 hover:underline"
+            >
+              {locale === "ar" ? "فتح السجل الرقابي" : "Open Regulatory Ledger"}
+            </Link>
           </div>
         </div>
 

@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx tests/security-and-business.test.ts && tsx tests/real-data-integrity.test.ts",
+    "test": "tsx tests/security-and-business.test.ts && tsx tests/real-data-integrity.test.ts && tsx tests/compliance-regulatory.test.ts",
     "i18n:check": "node scripts/check-i18n.mjs",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "tsx scripts/reset-db.ts",

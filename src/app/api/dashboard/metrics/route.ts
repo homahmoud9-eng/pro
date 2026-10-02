@@ -28,6 +28,10 @@ export async function GET() {
       recipes,
       taxRecords,
       openFindings,
+      activeRequirements,
+      openCorrectiveActions,
+      upcomingInspections,
+      validEfstCount,
       recentAudits,
       organization,
     ] = await Promise.all([
@@ -48,6 +52,25 @@ export async function GET() {
         where: {
           inspection: { organizationId: orgId },
           status: { in: ["OPEN", "IN_PROGRESS"] },
+        },
+      }),
+      prisma.regulatoryRequirement.count({
+        where: { organizationId: orgId, status: "ACTIVE" },
+      }),
+      prisma.correctiveAction.count({
+        where: { organizationId: orgId, status: { not: "CLOSED" } },
+      }),
+      prisma.foodSafetyInspection.count({
+        where: {
+          organizationId: orgId,
+          status: { in: ["SCHEDULED", "IN_PROGRESS", "FOLLOW_UP_REQUIRED"] },
+        },
+      }),
+      prisma.foodHandlerTraining.count({
+        where: {
+          organizationId: orgId,
+          status: "COMPLETED",
+          OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
         },
       }),
       prisma.auditLog.findMany({
@@ -141,6 +164,22 @@ export async function GET() {
           expiring30: expiring30Docs,
           expired: expiredEmployeeDocs,
           missing: missingDocs,
+        },
+        complianceStats: {
+          activeRequirements: Number(activeRequirements || 0),
+          expiredDocs: Number(expiredDocs || 0),
+          openFindings: Number(openFindings || 0),
+          openCorrectiveActions: Number(openCorrectiveActions || 0),
+          upcomingInspections: Number(upcomingInspections || 0),
+          efstCoveragePercent:
+            Number(totalEmployees || 0) > 0
+              ? Math.round((Number(validEfstCount || 0) / Number(totalEmployees || 0)) * 100)
+              : null,
+          hasRealData:
+            Number(openFindings || 0) > 0 ||
+            Number(openCorrectiveActions || 0) > 0 ||
+            Number(upcomingInspections || 0) > 0 ||
+            Number(validEfstCount || 0) > 0,
         },
       },
       organization: organization || undefined,

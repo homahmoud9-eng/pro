@@ -23,6 +23,15 @@ export interface DashboardMetrics {
     expired: number;
     missing: number;
   };
+  complianceStats?: {
+    activeRequirements: number;
+    expiredDocs: number;
+    openFindings: number;
+    openCorrectiveActions: number;
+    upcomingInspections: number;
+    efstCoveragePercent: number | null;
+    hasRealData: boolean;
+  };
 }
 
 export interface RecentAuditEntry {
